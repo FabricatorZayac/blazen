@@ -1,12 +1,13 @@
 #![no_main]
 
 mod cards;
+mod button;
 
 use crate::cards::deck::Deck;
+use button::Button;
 use wasm4::{
     self as w4,
-    draw::{Color, DrawIndex, DrawIndices, Framebuffer},
-    sys,
+    draw::{Color, DrawIndex, Framebuffer},
 };
 
 enum State {
@@ -17,10 +18,19 @@ enum State {
     },
 }
 
+impl State {
+    fn start_game(&mut self) {
+        *self = State::Game {
+            state: GameState::Inspect,
+            deck: Deck::new(),
+        };
+    }
+}
+
 enum GameState {
     Pause,
     Play,
-    DeckView,
+    Inspect,
 }
 
 struct Blazen {
@@ -45,27 +55,34 @@ impl w4::rt::Runtime for Blazen {
             Color(0xf0f0f0),
         ]);
 
-        match self.state {
+        match &self.state {
             State::Menu => self.menu(),
-            State::Game { state: _, deck: _ } => todo!(),
+            State::Game { state, deck } => match state {
+                GameState::Pause => todo!(),
+                GameState::Play => todo!(),
+                GameState::Inspect => todo!(),
+            },
         }
     }
 }
 
 impl Blazen {
     fn menu(&mut self) {
-        unsafe { *sys::DRAW_COLORS = 0x2; }
-        self.framebuffer.text("BLAZEN", [55, 40]);
+        self.framebuffer.text("BLAZEN", [55, 40], DrawIndex::Second, DrawIndex::Transparent);
+        self.framebuffer.rect([20, 100], [120, 40], DrawIndex::Second, DrawIndex::Third);
 
-        unsafe { *sys::DRAW_COLORS = 0x32; }
-        self.framebuffer.rect([20, 100], [120, 40]);
+        Button::new(
+            [45, 105],
+            "New game",
+            DrawIndex::Third,
+            DrawIndex::First,
+            DrawIndex::Fourth,
+            ||{ self.state.start_game(); },
+        ).draw(&self.framebuffer);
+    }
 
-        unsafe { *sys::DRAW_COLORS = 0x13; }
-        self.framebuffer.rect([30, 105], [43, 30]);
+    fn pause(&mut self) {
 
-        unsafe { *sys::DRAW_COLORS = 0x4; }
-        self.framebuffer.text("New", [40, 110]);
-        self.framebuffer.text("game", [36, 120]);
     }
 }
 

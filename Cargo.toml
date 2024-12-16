@@ -12,4 +12,4 @@ constgebra = "0.1.4"
 heapless = "0.8.0"
 libm = "0.2.11"
 strum = { version = "0.26.3", features = ["derive"] }
-wasm4 = { version = "0.2.0", features = ["include-sprites"] }
+wasm4 = { git = "https://github.com/FabricatorZayac/wasm4-rs", branch = "dev" }
