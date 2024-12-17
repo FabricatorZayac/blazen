@@ -15,11 +15,11 @@ pub struct Deck {
 impl Deck {
     pub fn new() -> Self {
         let mut cards: Vec<Card, 255> = Vec::new();
-        
+
         for suit in Suit::iter() {
             for rank in Rank::iter() {
                 match cards.push(Card::new(suit, rank)) {
-                    Ok(_) => {},
+                    Ok(_) => {}
                     Err(_) => unreachable!(), // Can't overflow. 52/255
                 }
             }

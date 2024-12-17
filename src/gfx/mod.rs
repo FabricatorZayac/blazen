@@ -1,6 +1,6 @@
 use bitvec::{order::Msb0, view::AsBits};
 use micromath::vector::I32x2;
-use texture::{Texture, TextureColors, TEXTURE_HEIGHT, TEXTURE_WIDTH};
+use texture::{TEXTURE_HEIGHT, TEXTURE_WIDTH, Texture, TextureColors};
 use wasm4::draw::{DrawIndex, Framebuffer};
 
 pub mod model;
@@ -47,23 +47,33 @@ impl Render for Triangle<'_> {
 
                             let tx = if tx > TEXTURE_WIDTH as usize {
                                 TEXTURE_WIDTH as usize
-                            } else { tx };
+                            } else {
+                                tx
+                            };
 
                             let ty = if ty > TEXTURE_HEIGHT as usize {
                                 TEXTURE_HEIGHT as usize
-                            } else { ty };
+                            } else {
+                                ty
+                            };
 
                             let buf = texture.buf;
 
                             match texture.colors {
                                 TextureColors::OneBpp(idxs) => {
                                     let bits = buf.as_bits::<Msb0>();
-                                    pixel(x, y, idxs[bits[tx + ty * TEXTURE_WIDTH as usize] as usize], fb);
-                                },
-                                TextureColors::TwoBpp(_) => { },
+                                    pixel(
+                                        x,
+                                        y,
+                                        idxs[bits[tx + ty * TEXTURE_WIDTH as usize] as usize],
+                                        fb,
+                                    );
+                                }
+                                TextureColors::TwoBpp(_) => {
+                                    unimplemented!()
+                                }
                             }
-
-                        },
+                        }
                         TriangleFill::Color(idx) => {
                             pixel(x, y, idx, fb);
                         }
@@ -76,22 +86,26 @@ impl Render for Triangle<'_> {
 
 impl Triangle<'_> {
     fn normalize(&self) -> [I32x2; 2] {
-        let lx = self.vertices.iter().map(|v|{v.x}).min().unwrap();
-        let ly = self.vertices.iter().map(|v|{v.y}).min().unwrap();
+        let lx = self.vertices.iter().map(|v| v.x).min().unwrap();
+        let ly = self.vertices.iter().map(|v| v.y).min().unwrap();
 
-        let hx = self.vertices.iter().map(|v|{v.x}).max().unwrap();
-        let hy = self.vertices.iter().map(|v|{v.y}).max().unwrap();
+        let hx = self.vertices.iter().map(|v| v.x).max().unwrap();
+        let hy = self.vertices.iter().map(|v| v.y).max().unwrap();
 
         [I32x2 { x: lx, y: ly }, I32x2 { x: hx, y: hy }]
     }
     fn barycentric(&self, pt: I32x2) -> Option<Barycentric2D> {
         let pts = self.vertices;
+
+        #[rustfmt::skip]
         let det = (pts[0].x - pts[2].x) * (pts[1].y - pts[2].y)
                 - (pts[1].x - pts[2].x) * (pts[0].y - pts[2].y);
 
+        #[rustfmt::skip]
         let u1 = (pt.x - pts[2].x) * (pts[1].y - pts[2].y)
                + (pts[2].x - pts[1].x) * (pt.y - pts[2].y);
 
+        #[rustfmt::skip]
         let u2 = (pt.x - pts[2].x) * (pts[2].y - pts[0].y)
                + (pts[0].x - pts[2].x) * (pt.y - pts[2].y);
 
@@ -107,11 +121,7 @@ impl Triangle<'_> {
             return None;
         }
 
-        Some(Barycentric2D {
-            u1,
-            u2,
-            det,
-        })
+        Some(Barycentric2D { u1, u2, det })
     }
 }
 
@@ -122,10 +132,18 @@ struct Barycentric2D {
 }
 
 impl Barycentric2D {
-    pub fn alpha(&self) -> f32 { self.u1 as f32 }
-    pub fn beta(&self) -> f32 { self.u2 as f32 }
-    pub fn gamma(&self) -> f32 { (self.det - self.u1 - self.u2) as f32 }
-    pub fn det(&self) -> f32 { self.det as f32 }
+    pub fn alpha(&self) -> f32 {
+        self.u1 as f32
+    }
+    pub fn beta(&self) -> f32 {
+        self.u2 as f32
+    }
+    pub fn gamma(&self) -> f32 {
+        (self.det - self.u1 - self.u2) as f32
+    }
+    pub fn det(&self) -> f32 {
+        self.det as f32
+    }
 }
 
 impl From<[i32; 3]> for Barycentric2D {

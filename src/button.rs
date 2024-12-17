@@ -1,6 +1,6 @@
 use wasm4::draw::{DrawIndex, Framebuffer};
 
-use crate::{gfx::Render, tick::Tick, Blazen};
+use crate::{Blazen, gfx::Render, tick::Tick};
 
 pub struct Button<F: FnMut(&mut Blazen)> {
     start: [i32; 2],
@@ -13,12 +13,7 @@ pub struct Button<F: FnMut(&mut Blazen)> {
 
 impl<F: FnMut(&mut Blazen)> Render for Button<F> {
     fn render(self, fb: &Framebuffer) {
-        fb.rect(
-            self.start,
-            self.get_shape(),
-            self.fill,
-            self.outline,
-        );
+        fb.rect(self.start, self.get_shape(), self.fill, self.outline);
 
         fb.text(
             self.text,

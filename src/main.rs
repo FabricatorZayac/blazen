@@ -1,27 +1,27 @@
 #![no_std]
 #![no_main]
 
-mod cards;
 mod button;
+mod cards;
 mod gfx;
 mod tick;
 
 use crate::cards::deck::Deck;
 use button::Button;
 use cards::card::Card;
-use gfx::{model::CardModel, Render};
+use gfx::{Render, model::CardModel};
 use micromath::vector::I32x2;
 use tick::Tick;
 use wasm4::{
-    self as w4, control::{Mouse, MouseState}, draw::{Color, DrawIndex, Framebuffer}, sys::{blit, BLIT_1BPP}
+    self as w4,
+    control::{Mouse, MouseState},
+    draw::{Color, DrawIndex, Framebuffer},
+    sys::{BLIT_1BPP, blit},
 };
 
 enum State {
     Menu,
-    Game {
-        state: GameState,
-        deck: Deck,
-    },
+    Game { state: GameState, deck: Deck },
 }
 
 impl State {
@@ -70,8 +70,8 @@ impl w4::rt::Runtime for Blazen {
         match &self.state {
             State::Menu => self.menu(),
             State::Game { state, deck: _ } => match state {
-                GameState::Inspect => { },
-                GameState::Play => { },
+                GameState::Inspect => {}
+                GameState::Play => {}
             },
         }
 
@@ -82,7 +82,8 @@ impl w4::rt::Runtime for Blazen {
 impl Blazen {
     fn menu(&mut self) {
         // self.framebuffer.text("BLAZEN", [55, 40], DrawIndex::Second, DrawIndex::Transparent);
-        self.framebuffer.rect([20, 100], [120, 40], DrawIndex::Second, DrawIndex::Third);
+        self.framebuffer
+            .rect([20, 100], [120, 40], DrawIndex::Second, DrawIndex::Third);
 
         Button::new(
             [45, 105],
@@ -90,13 +91,16 @@ impl Blazen {
             DrawIndex::Third,
             DrawIndex::First,
             DrawIndex::Fourth,
-            |s|{ s.state.start_game() },
-        ).update(self).render(&self.framebuffer);
+            |s| s.state.start_game(),
+        )
+        .update(self)
+        .render(&self.framebuffer);
 
         CardModel::new(
             I32x2 { x: 65, y: 50 },
             &Card::new(cards::card::Suit::Spade, cards::card::Rank::Ace),
-        ).render(&self.framebuffer);
+        )
+        .render(&self.framebuffer);
     }
 }
 
