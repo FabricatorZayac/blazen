@@ -1,13 +1,17 @@
+#![no_std]
 #![no_main]
 
 mod cards;
 mod button;
+mod gfx;
 
 use crate::cards::deck::Deck;
 use button::Button;
+use cards::card::Card;
+use gfx::{model::{CardModel, ACE}, texture::Texture, Render};
+use micromath::vector::{F32x2, I32x2};
 use wasm4::{
-    self as w4,
-    draw::{Color, DrawIndex, Framebuffer},
+    self as w4, control::{Mouse, MouseState}, draw::{Color, DrawIndex, Framebuffer}, sys::{blit, BLIT_1BPP}
 };
 
 enum State {
@@ -20,6 +24,7 @@ enum State {
 
 impl State {
     fn start_game(&mut self) {
+        w4::trace("Starting game");
         *self = State::Game {
             state: GameState::Inspect,
             deck: Deck::new(),
@@ -28,14 +33,16 @@ impl State {
 }
 
 enum GameState {
-    Pause,
-    Play,
     Inspect,
+    Play,
 }
 
 struct Blazen {
     framebuffer: Framebuffer,
     state: State,
+    mouse: Mouse,
+
+    prev_mouse: Option<MouseState>,
 }
 
 // prints "tick" every second
@@ -44,6 +51,9 @@ impl w4::rt::Runtime for Blazen {
         Blazen {
             framebuffer: res.framebuffer,
             state: State::Menu,
+            mouse: res.controls.mouse,
+
+            prev_mouse: None,
         }
     }
 
@@ -58,17 +68,18 @@ impl w4::rt::Runtime for Blazen {
         match &self.state {
             State::Menu => self.menu(),
             State::Game { state, deck } => match state {
-                GameState::Pause => todo!(),
-                GameState::Play => todo!(),
-                GameState::Inspect => todo!(),
+                GameState::Inspect => { },
+                GameState::Play => { },
             },
         }
+
+        self.prev_mouse = Some(self.mouse.state());
     }
 }
 
 impl Blazen {
     fn menu(&mut self) {
-        self.framebuffer.text("BLAZEN", [55, 40], DrawIndex::Second, DrawIndex::Transparent);
+        // self.framebuffer.text("BLAZEN", [55, 40], DrawIndex::Second, DrawIndex::Transparent);
         self.framebuffer.rect([20, 100], [120, 40], DrawIndex::Second, DrawIndex::Third);
 
         Button::new(
@@ -77,12 +88,31 @@ impl Blazen {
             DrawIndex::Third,
             DrawIndex::First,
             DrawIndex::Fourth,
-            ||{ self.state.start_game(); },
-        ).draw(&self.framebuffer);
-    }
+            |s|{ s.state.start_game(); },
+        ).update(self).render(&self.framebuffer);
 
-    fn pause(&mut self) {
-
+        CardModel {
+            origin: I32x2 { x: 65, y: 50 },
+            card: &Card::new(cards::card::Suit::Spade, cards::card::Rank::Ace),
+            texture: [
+                Texture {
+                    buf: &ACE,
+                    uv: [
+                        F32x2 { x: 0.0, y: 0.0 },
+                        F32x2 { x: 1.0, y: 0.0 },
+                        F32x2 { x: 0.0, y: 1.0 },
+                    ]
+                },
+                Texture {
+                    buf: &ACE,
+                    uv: [
+                        F32x2 { x: 1.0, y: 0.0 },
+                        F32x2 { x: 1.0, y: 1.0 },
+                        F32x2 { x: 0.0, y: 1.0 },
+                    ]
+                }
+            ]
+        }.render(&self.framebuffer);
     }
 }
 

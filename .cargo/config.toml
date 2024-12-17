@@ -13,4 +13,4 @@ rustflags = [
     # Bump this value, 16-byte aligned, if the framebuffer gets corrupted.
     "-C", "link-arg=-zstack-size=14752",
 ]
-runner = "w4 run-native"
+runner = "w4 run"

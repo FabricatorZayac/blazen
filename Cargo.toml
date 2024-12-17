@@ -8,8 +8,9 @@ opt-level = "z"
 lto = true
 
 [dependencies]
-constgebra = "0.1.4"
+bitvec = "1.0.1"
 heapless = "0.8.0"
 libm = "0.2.11"
+micromath = { version = "2.1.0", features = ["vector"] }
 strum = { version = "0.26.3", features = ["derive"] }
-wasm4 = { git = "https://github.com/FabricatorZayac/wasm4-rs", branch = "dev" }
+wasm4 = { git = "https://github.com/FabricatorZayac/wasm4-rs", branch = "feature/controls" }

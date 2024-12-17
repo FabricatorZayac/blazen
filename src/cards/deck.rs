@@ -30,4 +30,8 @@ impl Deck {
             kind: DeckType::Default,
         }
     }
+
+    pub fn get(&self, idx: usize) -> &Card {
+        &self.cards[idx]
+    }
 }
