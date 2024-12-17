@@ -1,6 +1,6 @@
 use bitvec::{order::Msb0, view::AsBits};
 use micromath::vector::I32x2;
-use texture::{TEXTURE_HEIGHT, TEXTURE_WIDTH, Texture};
+use texture::{Texture, TextureColors, TEXTURE_HEIGHT, TEXTURE_WIDTH};
 use wasm4::draw::{DrawIndex, Framebuffer};
 
 pub mod model;
@@ -12,7 +12,12 @@ pub trait Render {
 
 pub struct Triangle<'a> {
     pub vertices: [I32x2; 3],
-    pub texture: Option<Texture<'a>>,
+    pub fill: TriangleFill<'a>,
+}
+
+pub enum TriangleFill<'a> {
+    Texture(Texture<'a>),
+    Color(DrawIndex),
 }
 
 impl Render for Triangle<'_> {
@@ -21,40 +26,47 @@ impl Render for Triangle<'_> {
         for y in normal[0].y..normal[1].y {
             for x in normal[0].x..normal[1].x {
                 if let Some(bary) = self.barycentric(I32x2 { x, y }) {
-                    let texture = self.texture.unwrap();
+                    match self.fill {
+                        TriangleFill::Texture(texture) => {
+                            let uv0 = texture.uv[0];
+                            let uv1 = texture.uv[1];
+                            let uv2 = texture.uv[2];
 
-                    let uv0 = texture.uv[0];
-                    let uv1 = texture.uv[1];
-                    let uv2 = texture.uv[2];
+                            #[rustfmt::skip]
+                            let z = bary.alpha() / bary.det()
+                                  + bary.beta() / bary.det()
+                                  + bary.gamma() / bary.det();
 
-                    #[rustfmt::skip]
-                    let z = bary.alpha() / bary.det()
-                          + bary.beta() / bary.det()
-                          + bary.gamma() / bary.det();
+                            #[rustfmt::skip]
+                            let uv = (uv0 * bary.alpha() * (1.0 / bary.det()))
+                                   + (uv1 * bary.beta() * (1.0 / bary.det()))
+                                   + (uv2 * bary.gamma() * (1.0 / bary.det()));
 
-                    #[rustfmt::skip]
-                    let uv = (uv0 * bary.alpha() * (1.0 / bary.det()))
-                           + (uv1 * bary.beta() * (1.0 / bary.det()))
-                           + (uv2 * bary.gamma() * (1.0 / bary.det()));
+                            let tx = (uv.x / z * TEXTURE_WIDTH as f32) as usize;
+                            let ty = (uv.y / z * TEXTURE_HEIGHT as f32) as usize;
 
-                    let buf = texture.buf;
-                    let bits = buf.as_bits::<Msb0>();
+                            let tx = if tx > TEXTURE_WIDTH as usize {
+                                TEXTURE_WIDTH as usize
+                            } else { tx };
 
-                    let tx = (uv.x / z * TEXTURE_WIDTH as f32) as usize;
-                    let ty = (uv.y / z * TEXTURE_HEIGHT as f32) as usize;
+                            let ty = if ty > TEXTURE_HEIGHT as usize {
+                                TEXTURE_HEIGHT as usize
+                            } else { ty };
 
-                    let tx = if tx > TEXTURE_WIDTH as usize {
-                        TEXTURE_WIDTH as usize
-                    } else { tx };
+                            let buf = texture.buf;
 
-                    let ty = if ty > TEXTURE_HEIGHT as usize {
-                        TEXTURE_HEIGHT as usize
-                    } else { ty };
+                            match texture.colors {
+                                TextureColors::OneBpp(idxs) => {
+                                    let bits = buf.as_bits::<Msb0>();
+                                    pixel(x, y, idxs[bits[tx + ty * TEXTURE_WIDTH as usize] as usize], fb);
+                                },
+                                TextureColors::TwoBpp(_) => { },
+                            }
 
-                    if bits[tx + ty * TEXTURE_WIDTH as usize] {
-                        pixel(x, y, DrawIndex::Fourth, fb);
-                    } else {
-                        pixel(x, y, DrawIndex::Second, fb);
+                        },
+                        TriangleFill::Color(idx) => {
+                            pixel(x, y, idx, fb);
+                        }
                     }
                 }
             }

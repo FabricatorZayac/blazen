@@ -4,12 +4,14 @@
 mod cards;
 mod button;
 mod gfx;
+mod tick;
 
 use crate::cards::deck::Deck;
 use button::Button;
 use cards::card::Card;
-use gfx::{model::{CardModel, ACE}, texture::Texture, Render};
-use micromath::vector::{F32x2, I32x2};
+use gfx::{model::CardModel, Render};
+use micromath::vector::I32x2;
+use tick::Tick;
 use wasm4::{
     self as w4, control::{Mouse, MouseState}, draw::{Color, DrawIndex, Framebuffer}, sys::{blit, BLIT_1BPP}
 };
@@ -67,7 +69,7 @@ impl w4::rt::Runtime for Blazen {
 
         match &self.state {
             State::Menu => self.menu(),
-            State::Game { state, deck } => match state {
+            State::Game { state, deck: _ } => match state {
                 GameState::Inspect => { },
                 GameState::Play => { },
             },
@@ -88,31 +90,13 @@ impl Blazen {
             DrawIndex::Third,
             DrawIndex::First,
             DrawIndex::Fourth,
-            |s|{ s.state.start_game(); },
+            |s|{ s.state.start_game() },
         ).update(self).render(&self.framebuffer);
 
-        CardModel {
-            origin: I32x2 { x: 65, y: 50 },
-            card: &Card::new(cards::card::Suit::Spade, cards::card::Rank::Ace),
-            texture: [
-                Texture {
-                    buf: &ACE,
-                    uv: [
-                        F32x2 { x: 0.0, y: 0.0 },
-                        F32x2 { x: 1.0, y: 0.0 },
-                        F32x2 { x: 0.0, y: 1.0 },
-                    ]
-                },
-                Texture {
-                    buf: &ACE,
-                    uv: [
-                        F32x2 { x: 1.0, y: 0.0 },
-                        F32x2 { x: 1.0, y: 1.0 },
-                        F32x2 { x: 0.0, y: 1.0 },
-                    ]
-                }
-            ]
-        }.render(&self.framebuffer);
+        CardModel::new(
+            I32x2 { x: 65, y: 50 },
+            &Card::new(cards::card::Suit::Spade, cards::card::Rank::Ace),
+        ).render(&self.framebuffer);
     }
 }
 
