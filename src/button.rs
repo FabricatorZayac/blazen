@@ -1,6 +1,6 @@
 use wasm4::draw::{DrawIndex, Framebuffer};
 
-use crate::{Blazen, gfx::Render, tick::Tick};
+use crate::{Blazen, gfx::Render};
 
 pub struct Button<F: FnMut(&mut Blazen)> {
     start: [i32; 2],
@@ -24,7 +24,7 @@ impl<F: FnMut(&mut Blazen)> Render for Button<F> {
     }
 }
 
-impl<F: FnMut(&mut Blazen)> Tick<Blazen> for Button<F> {
+impl<F: FnMut(&mut Blazen)> Button<F> {
     fn update(mut self, rt: &mut Blazen) -> Self {
         let mouse = rt.mouse.state();
 
@@ -47,9 +47,7 @@ impl<F: FnMut(&mut Blazen)> Tick<Blazen> for Button<F> {
 
         self
     }
-}
 
-impl<F: FnMut(&mut Blazen)> Button<F> {
     pub fn new(
         start: [i32; 2],
         text: &'static str,

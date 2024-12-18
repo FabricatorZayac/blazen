@@ -18,10 +18,7 @@ impl Deck {
 
         for suit in Suit::iter() {
             for rank in Rank::iter() {
-                match cards.push(Card::new(suit, rank)) {
-                    Ok(_) => {}
-                    Err(_) => unreachable!(), // Can't overflow. 52/255
-                }
+                cards.push(Card::new(suit, rank)).unwrap();
             }
         }
 

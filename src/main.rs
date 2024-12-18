@@ -2,49 +2,23 @@
 #![no_main]
 
 mod button;
-mod cards;
+mod card;
 mod gfx;
-mod tick;
 
-use crate::cards::deck::Deck;
-use button::Button;
-use cards::card::Card;
-use gfx::{Render, model::CardModel};
-use micromath::vector::I32x2;
-use tick::Tick;
+use card::{card::Card, state::CardState, view::CardView};
+use gfx::Render;
 use wasm4::{
     self as w4,
     control::{Mouse, MouseState},
-    draw::{Color, DrawIndex, Framebuffer},
-    sys::{BLIT_1BPP, blit},
+    draw::{Color, Framebuffer},
 };
-
-enum State {
-    Menu,
-    Game { state: GameState, deck: Deck },
-}
-
-impl State {
-    fn start_game(&mut self) {
-        w4::trace("Starting game");
-        *self = State::Game {
-            state: GameState::Inspect,
-            deck: Deck::new(),
-        };
-    }
-}
-
-enum GameState {
-    Inspect,
-    Play,
-}
 
 struct Blazen {
     framebuffer: Framebuffer,
-    state: State,
     mouse: Mouse,
-
     prev_mouse: Option<MouseState>,
+
+    card: CardState,
 }
 
 // prints "tick" every second
@@ -52,14 +26,24 @@ impl w4::rt::Runtime for Blazen {
     fn start(res: w4::rt::Resources) -> Self {
         Blazen {
             framebuffer: res.framebuffer,
-            state: State::Menu,
             mouse: res.controls.mouse,
-
             prev_mouse: None,
+
+            card: CardState::new(Card::new(
+                card::card::Suit::Spade,
+                card::card::Rank::Two,
+            ), (80.0, 80.0).into()),
         }
     }
 
     fn update(&mut self) {
+        self.mutate();
+        self.render();
+    }
+}
+
+impl Blazen {
+    fn mutate(&mut self) {
         self.framebuffer.replace_palette([
             Color(0x8f9bf6),
             Color(0x161616),
@@ -67,40 +51,13 @@ impl w4::rt::Runtime for Blazen {
             Color(0xf0f0f0),
         ]);
 
-        match &self.state {
-            State::Menu => self.menu(),
-            State::Game { state, deck: _ } => match state {
-                GameState::Inspect => {}
-                GameState::Play => {}
-            },
-        }
+        self.card.rotate(0.01.into());
 
         self.prev_mouse = Some(self.mouse.state());
     }
-}
 
-impl Blazen {
-    fn menu(&mut self) {
-        // self.framebuffer.text("BLAZEN", [55, 40], DrawIndex::Second, DrawIndex::Transparent);
-        self.framebuffer
-            .rect([20, 100], [120, 40], DrawIndex::Second, DrawIndex::Third);
-
-        Button::new(
-            [45, 105],
-            "New game",
-            DrawIndex::Third,
-            DrawIndex::First,
-            DrawIndex::Fourth,
-            |s| s.state.start_game(),
-        )
-        .update(self)
-        .render(&self.framebuffer);
-
-        CardModel::new(
-            I32x2 { x: 65, y: 50 },
-            &Card::new(cards::card::Suit::Spade, cards::card::Rank::Ace),
-        )
-        .render(&self.framebuffer);
+    fn render(&self) {
+        self.card.view().render(&self.framebuffer);
     }
 }
 

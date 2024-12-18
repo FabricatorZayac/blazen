@@ -3,8 +3,8 @@ use micromath::vector::I32x2;
 use texture::{TEXTURE_HEIGHT, TEXTURE_WIDTH, Texture, TextureColors};
 use wasm4::draw::{DrawIndex, Framebuffer};
 
-pub mod model;
 pub mod texture;
+pub mod matrix;
 
 pub trait Render {
     fn render(self, fb: &Framebuffer);
@@ -57,11 +57,9 @@ impl Render for Triangle<'_> {
                                 ty
                             };
 
-                            let buf = texture.buf;
-
                             match texture.colors {
                                 TextureColors::OneBpp(idxs) => {
-                                    let bits = buf.as_bits::<Msb0>();
+                                    let bits = texture.buf.as_bits::<Msb0>();
                                     pixel(
                                         x,
                                         y,
@@ -92,7 +90,7 @@ impl Triangle<'_> {
         let hx = self.vertices.iter().map(|v| v.x).max().unwrap();
         let hy = self.vertices.iter().map(|v| v.y).max().unwrap();
 
-        [I32x2 { x: lx, y: ly }, I32x2 { x: hx, y: hy }]
+        [(lx, ly).into(), (hx, hy).into()]
     }
     fn barycentric(&self, pt: I32x2) -> Option<Barycentric2D> {
         let pts = self.vertices;
@@ -157,6 +155,9 @@ impl From<[i32; 3]> for Barycentric2D {
 }
 
 fn pixel(x: i32, y: i32, color_idx: DrawIndex, fb: &Framebuffer) {
+    if x < 0 || x >= wasm4::sys::SCREEN_SIZE as i32 || y < 0 || y >= wasm4::sys::SCREEN_SIZE as i32 {
+        return;
+    }
     // The byte index into the framebuffer that contains (x, y)
     let idx = (y as usize * 160 + x as usize) >> 2;
 
