@@ -1,17 +1,14 @@
 use core::ops::{Add, Index, Mul, Sub};
 
-use micromath::vector::{Component, Vector2d};
+use micromath::{vector::{Component, Vector, Vector2d}, F32};
 
 #[derive(Clone, Copy, Debug)]
-pub struct Mat2d<C: Component>(
-    pub Vector2d<C>,
-    pub Vector2d<C>,
+pub struct Mat2(
+    Vector2d<f32>,
+    Vector2d<f32>,
 );
 
-impl<C> Add for Mat2d<C>
-where
-    C: Component,
-{
+impl Add for Mat2 {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -22,10 +19,7 @@ where
     }
 }
 
-impl<C> Sub for Mat2d<C>
-where
-    C: Component,
-{
+impl Sub for Mat2 {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
@@ -36,13 +30,10 @@ where
     }
 }
 
-impl<C> Mul<Mat2d<C>> for Vector2d<C>
-where 
-    C: Component
-{
-    type Output = Vector2d<C>;
+impl Mul<Mat2> for Vector2d<f32> {
+    type Output = Vector2d<f32>;
 
-    fn mul(self, rhs: Mat2d<C>) -> Self::Output {
+    fn mul(self, rhs: Mat2) -> Self::Output {
         Self {
             x: self.x * rhs[0][0] + self.y * rhs[1][0],
             y: self.x * rhs[0][1] + self.y * rhs[1][1],
@@ -50,22 +41,16 @@ where
     }
 }
 
-impl<C> Mul<C> for Mat2d<C>
-where 
-    C: Component
-{
-    type Output = Mat2d<C>;
+impl Mul<f32> for Mat2 {
+    type Output = Mat2;
 
-    fn mul(self, rhs: C) -> Self::Output {
+    fn mul(self, rhs: f32) -> Self::Output {
         Self(self.0 * rhs, self.1 * rhs)
     }
 }
 
-impl<C> Index<usize> for Mat2d<C>
-where 
-    C: Component,
-{
-    type Output = Vector2d<C>;
+impl Index<usize> for Mat2 {
+    type Output = Vector2d<f32>;
 
     fn index(&self, index: usize) -> &Self::Output {
         match index {
@@ -76,11 +61,8 @@ where
     }
 }
 
-impl<C> From<((C, C), (C, C))> for Mat2d<C>
-where
-    C: Component
-{
-    fn from(value: ((C, C), (C, C))) -> Self {
+impl From<((f32, f32), (f32, f32))> for Mat2 {
+    fn from(value: ((f32, f32), (f32, f32))) -> Self {
         Self(value.0.into(), value.1.into())
     }
 }

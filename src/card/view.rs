@@ -1,4 +1,3 @@
-use micromath::vector::{I32x2, Vector};
 use wasm4::draw::Framebuffer;
 
 use crate::gfx::{
@@ -10,8 +9,9 @@ use super::state::CardState;
 
 pub struct CardView<'a> {
     texture: [Texture<'a>; 2],
-    vertices: [I32x2; 4],
+    vertices: [[i32; 2]; 4],
 }
+
 
 impl Render for CardView<'_> {
     fn render(self, fb: &Framebuffer) {
@@ -33,8 +33,7 @@ impl<'a> From<&'a CardState> for CardView<'a> {
     fn from(value: &'a CardState) -> Self {
         Self {
             texture: value.texture(),
-            vertices: value.vertices()
-                .map(|vec| vec.iter().map(|float| float as i32).collect()),
+            vertices: value.vertices().map(|vec| [vec[0] as i32, vec[1] as i32]),
         }
     }
 }

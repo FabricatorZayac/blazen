@@ -13,4 +13,9 @@ rustflags = [
     # Bump this value, 16-byte aligned, if the framebuffer gets corrupted.
     "-C", "link-arg=-zstack-size=14752",
 ]
+
+[unstable]
+build-std = ["core"]
+build-std-features = ["panic_immediate_abort"]
+
 runner = "w4 run"

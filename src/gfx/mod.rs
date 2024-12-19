@@ -1,17 +1,19 @@
 use bitvec::{order::Msb0, view::AsBits};
-use micromath::vector::I32x2;
+use micromath::vector::F32x2;
 use texture::{TEXTURE_HEIGHT, TEXTURE_WIDTH, Texture, TextureColors};
 use wasm4::draw::{DrawIndex, Framebuffer};
 
 pub mod texture;
 pub mod matrix;
 
+pub type Vec2 = F32x2;
+
 pub trait Render {
     fn render(self, fb: &Framebuffer);
 }
 
 pub struct Triangle<'a> {
-    pub vertices: [I32x2; 3],
+    pub vertices: [[i32; 2]; 3],
     pub fill: TriangleFill<'a>,
 }
 
@@ -23,9 +25,9 @@ pub enum TriangleFill<'a> {
 impl Render for Triangle<'_> {
     fn render(self, fb: &Framebuffer) {
         let normal = self.normalize();
-        for y in normal[0].y..normal[1].y {
-            for x in normal[0].x..normal[1].x {
-                if let Some(bary) = self.barycentric(I32x2 { x, y }) {
+        for y in normal[0][1]..normal[1][1] {
+            for x in normal[0][0]..normal[1][0] {
+                if let Some(bary) = self.barycentric([x, y]) {
                     match self.fill {
                         TriangleFill::Texture(texture) => {
                             let uv0 = texture.uv[0];
@@ -83,29 +85,29 @@ impl Render for Triangle<'_> {
 }
 
 impl Triangle<'_> {
-    fn normalize(&self) -> [I32x2; 2] {
-        let lx = self.vertices.iter().map(|v| v.x).min().unwrap();
-        let ly = self.vertices.iter().map(|v| v.y).min().unwrap();
+    fn normalize(&self) -> [[i32; 2]; 2] {
+        let lx = self.vertices.iter().map(|v| v[0]).min().unwrap();
+        let ly = self.vertices.iter().map(|v| v[1]).min().unwrap();
 
-        let hx = self.vertices.iter().map(|v| v.x).max().unwrap();
-        let hy = self.vertices.iter().map(|v| v.y).max().unwrap();
+        let hx = self.vertices.iter().map(|v| v[0]).max().unwrap();
+        let hy = self.vertices.iter().map(|v| v[1]).max().unwrap();
 
         [(lx, ly).into(), (hx, hy).into()]
     }
-    fn barycentric(&self, pt: I32x2) -> Option<Barycentric2D> {
+    fn barycentric(&self, pt: [i32; 2]) -> Option<Barycentric2D> {
         let pts = self.vertices;
 
         #[rustfmt::skip]
-        let det = (pts[0].x - pts[2].x) * (pts[1].y - pts[2].y)
-                - (pts[1].x - pts[2].x) * (pts[0].y - pts[2].y);
+        let det = (pts[0][0] - pts[2][0]) * (pts[1][1] - pts[2][1])
+                - (pts[1][0] - pts[2][0]) * (pts[0][1] - pts[2][1]);
 
         #[rustfmt::skip]
-        let u1 = (pt.x - pts[2].x) * (pts[1].y - pts[2].y)
-               + (pts[2].x - pts[1].x) * (pt.y - pts[2].y);
+        let u1 = (pt[0] - pts[2][0]) * (pts[1][1] - pts[2][1])
+               + (pts[2][0] - pts[1][0]) * (pt[1] - pts[2][1]);
 
         #[rustfmt::skip]
-        let u2 = (pt.x - pts[2].x) * (pts[2].y - pts[0].y)
-               + (pts[0].x - pts[2].x) * (pt.y - pts[2].y);
+        let u2 = (pt[0] - pts[2][0]) * (pts[2][1] - pts[0][1])
+               + (pts[0][0] - pts[2][0]) * (pt[1] - pts[2][1]);
 
         let u3 = det - u1 - u2;
 

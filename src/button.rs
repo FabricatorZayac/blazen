@@ -23,7 +23,6 @@ impl<F: FnMut(&mut Blazen)> Render for Button<F> {
         );
     }
 }
-
 impl<F: FnMut(&mut Blazen)> Button<F> {
     fn update(mut self, rt: &mut Blazen) -> Self {
         let mouse = rt.mouse.state();
