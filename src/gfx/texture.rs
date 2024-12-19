@@ -1,13 +1,12 @@
-use micromath::vector::F32x2;
 use wasm4::draw::DrawIndex;
 
-pub const TEXTURE_WIDTH: u32 = 60;
-pub const TEXTURE_HEIGHT: u32 = 80;
+pub const TEXTURE_WIDTH: usize = 60;
+pub const TEXTURE_HEIGHT: usize = 80;
 
 #[derive(Clone, Copy)]
 pub struct Texture<'a> {
     pub buf: &'a [u8],
-    pub uv: [F32x2; 3],
+    pub uv: [[f64; 2]; 3],
     pub colors: TextureColors,
 }
 

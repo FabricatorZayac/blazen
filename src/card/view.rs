@@ -33,7 +33,7 @@ impl<'a> From<&'a CardState> for CardView<'a> {
     fn from(value: &'a CardState) -> Self {
         Self {
             texture: value.texture(),
-            vertices: value.vertices().map(|vec| [vec[0] as i32, vec[1] as i32]),
+            vertices: value.vertices(),
         }
     }
 }

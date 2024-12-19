@@ -13,7 +13,7 @@ panic = "abort"
 [dependencies]
 bitvec = { version = "1.0.1", default-features = false }
 buddy-alloc = "0.6.0"
+constgebra = "0.1.4"
 heapless = { version = "0.8.0", default-features = false }
-micromath = { version = "2.1.0", features = ["vector"] }
 strum = { version = "0.26.3", features = ["derive"], default-features = false }
 wasm4 = { git = "https://github.com/FabricatorZayac/wasm4-rs", branch = "dev", features = ["tracef"] }

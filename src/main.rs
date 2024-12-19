@@ -57,27 +57,27 @@ impl w4::rt::Runtime for Blazen {
         this.cards.push(CardState::new(Card::new(
             card::card::Suit::Spade,
             card::card::Rank::Two,
-        ), ( 80.0, 80.0 ).into())).unwrap();
+        ), [80, 80])).ok();
 
         this.cards.push(CardState::new(Card::new(
             card::card::Suit::Heart,
             card::card::Rank::Two,
-        ), ( 30.0, 30.0 ).into())).unwrap();
+        ), [30, 30])).ok();
 
         this.cards.push(CardState::new(Card::new(
             card::card::Suit::Diamond,
             card::card::Rank::Two,
-        ), ( 110.0, 110.0 ).into())).unwrap();
+        ), [110, 110])).ok();
 
         this.cards.push(CardState::new(Card::new(
             card::card::Suit::Club,
             card::card::Rank::Two,
-        ), ( 30.0, 110.0 ).into())).unwrap();
+        ), [30, 110])).ok();
 
         this.cards.push(CardState::new(Card::new(
             card::card::Suit::Heart,
             card::card::Rank::Eight,
-        ), ( 110.0, 30.0 ).into())).unwrap();
+        ), [110, 30])).ok();
 
         let card_rotation_animator = Animator::new(
             Transformation::Rotation { start: 0.0, end: 270.0 },

@@ -1,12 +1,19 @@
 use bitvec::{order::Msb0, view::AsBits};
-use micromath::vector::F32x2;
+use constgebra::CVector;
 use texture::{TEXTURE_HEIGHT, TEXTURE_WIDTH, Texture, TextureColors};
 use wasm4::draw::{DrawIndex, Framebuffer};
 
 pub mod texture;
-pub mod matrix;
 
-pub type Vec2 = F32x2;
+pub trait Vectorize {
+    fn vectorize(self) -> CVector<2>;
+}
+
+impl Vectorize for [f64; 2] {
+    fn vectorize(self) -> CVector<2> {
+        CVector::new([self])
+    }
+}
 
 pub trait Render {
     fn render(self, fb: &Framebuffer);
@@ -35,26 +42,20 @@ impl Render for Triangle<'_> {
                             let uv2 = texture.uv[2];
 
                             #[rustfmt::skip]
-                            let z = bary.alpha() / bary.det()
-                                  + bary.beta() / bary.det()
-                                  + bary.gamma() / bary.det();
+                            let uv = uv0.map(|a| a * bary.alpha()).vectorize().add(
+                                     uv1.map(|a| a * bary.beta()).vectorize()).add(
+                                     uv2.map(|a| a * bary.gamma()).vectorize()).finish()[0];
+                            let tx = (uv[0] * TEXTURE_WIDTH as f64 / bary.det()) as usize;
+                            let ty = (uv[1] * TEXTURE_HEIGHT as f64 / bary.det()) as usize;
 
-                            #[rustfmt::skip]
-                            let uv = (uv0 * bary.alpha() * (1.0 / bary.det()))
-                                   + (uv1 * bary.beta() * (1.0 / bary.det()))
-                                   + (uv2 * bary.gamma() * (1.0 / bary.det()));
-
-                            let tx = (uv.x / z * TEXTURE_WIDTH as f32) as usize;
-                            let ty = (uv.y / z * TEXTURE_HEIGHT as f32) as usize;
-
-                            let tx = if tx > TEXTURE_WIDTH as usize {
-                                TEXTURE_WIDTH as usize
+                            let tx = if tx > TEXTURE_WIDTH {
+                                TEXTURE_WIDTH
                             } else {
                                 tx
                             };
 
-                            let ty = if ty > TEXTURE_HEIGHT as usize {
-                                TEXTURE_HEIGHT as usize
+                            let ty = if ty > TEXTURE_HEIGHT {
+                                TEXTURE_HEIGHT
                             } else {
                                 ty
                             };
@@ -132,17 +133,17 @@ struct Barycentric2D {
 }
 
 impl Barycentric2D {
-    pub fn alpha(&self) -> f32 {
-        self.u1 as f32
+    pub fn alpha(&self) -> f64 {
+        self.u1 as f64
     }
-    pub fn beta(&self) -> f32 {
-        self.u2 as f32
+    pub fn beta(&self) -> f64 {
+        self.u2 as f64
     }
-    pub fn gamma(&self) -> f32 {
-        (self.det - self.u1 - self.u2) as f32
+    pub fn gamma(&self) -> f64 {
+        (self.det - self.u1 - self.u2) as f64
     }
-    pub fn det(&self) -> f32 {
-        self.det as f32
+    pub fn det(&self) -> f64 {
+        self.det as f64
     }
 }
 
