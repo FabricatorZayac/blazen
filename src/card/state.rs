@@ -1,9 +1,8 @@
-use core::intrinsics::{cosf32, cosf64, sinf32, sinf64};
-
 use constgebra::{CMatrix, CVector};
 
-use crate::animator::animator::Animate;
+use crate::animator::animation_state::AnimationState;
 use crate::gfx::texture::Texture;
+use crate::gfx::Vectorize;
 
 use super::{card::Card, view::CardView};
 
@@ -12,7 +11,7 @@ pub struct CardState {
     origin: [i32; 2],
     diff_vecs: [[f64; 2]; 4],
 
-    current_rotation: f64,
+    animations: heapless::Vec<AnimationState, 10>,
 }
 
 impl CardState {
@@ -26,7 +25,7 @@ impl CardState {
                 [ 16.0,  21.0],
                 [-16.0,  21.0],
             ],
-            current_rotation: 0.0,
+            animations: heapless::Vec::new(),
         }
     }
     pub fn texture(&self) -> [Texture; 2] {
@@ -35,23 +34,32 @@ impl CardState {
     pub fn vertices(&self) -> [[i32; 2]; 4] {
         self.diff_vecs.map(|diff| CVector::new([self.origin.map(|i| i as f64)]).add(CVector::new([diff])).finish()[0].map(|f| f as i32))
     }
-    pub fn view(&self) -> CardView { self.into() }
-
-    pub fn rotate(&mut self, rad: f64) {
-        let matrix = CMatrix::new(unsafe { [
-            [ cosf64(rad), -sinf64(rad)],
-            [ sinf64(rad),  cosf64(rad)],
-        ] });
-
-        self.diff_vecs = self.diff_vecs
-            .map(|vec| CVector::new([vec]))
-            .map(|vec| vec.mul(matrix).finish()[0]);
+    pub fn origin(&self) -> [i32; 2] {
+        self.origin
+    }
+    pub fn view(&mut self) -> CardView {
+        let transform = self.animate();
+        let vertices = self.apply_transform(transform);
+        CardView::new(self.texture(), vertices.map(|diff| CVector::new([self.origin.map(|i| i as f64)]).add(CVector::new([diff])).finish()[0].map(|f| f as i32)))
     }
 }
-impl Animate for CardState {
-    fn set_rotation(&mut self, rotation: f64) {
-        let rotation_rad = rotation/180.0* core::f64::consts::PI;
-        self.rotate(self.current_rotation - rotation_rad);
-        self.current_rotation = rotation_rad;
+
+impl CardState {
+    fn animate(&mut self) -> CMatrix<3, 3> {
+        self.animations
+            .iter_mut()
+            .map(AnimationState::update)
+            .reduce(CMatrix::mul)
+            .unwrap_or(CMatrix::identity())
+    }
+    fn apply_transform(&self, matrix: CMatrix<3, 3>) -> [[f64; 2]; 4] {
+        self.diff_vecs
+            .map(Vectorize::vectorize)
+            .map(|vec| vec.mul(matrix))
+            .map(Vectorize::devectorize)
+    }
+
+    pub fn add_animation(&mut self, animation: AnimationState) {
+        self.animations.push(animation).unwrap();
     }
 }

@@ -5,13 +5,16 @@ use crate::gfx::{
     texture::Texture,
 };
 
-use super::state::CardState;
-
 pub struct CardView<'a> {
     texture: [Texture<'a>; 2],
     vertices: [[i32; 2]; 4],
 }
 
+impl<'a> CardView<'a> {
+    pub fn new(texture: [Texture<'a>; 2], vertices: [[i32;2]; 4]) -> Self {
+        Self { texture, vertices }
+    }
+}
 
 impl Render for CardView<'_> {
     fn render(self, fb: &Framebuffer) {
@@ -26,14 +29,5 @@ impl Render for CardView<'_> {
 
         t1.render(fb);
         t2.render(fb);
-    }
-}
-
-impl<'a> From<&'a CardState> for CardView<'a> {
-    fn from(value: &'a CardState) -> Self {
-        Self {
-            texture: value.texture(),
-            vertices: value.vertices(),
-        }
     }
 }

@@ -1,8 +1,8 @@
 use bit_reverse::ParallelReverse;
-use bitvec::{array::BitArray, order::Msb0, slice::BitSlice, view::{AsBits, AsMutBits}};
+use bitvec::{order::Msb0, slice::BitSlice, view::{AsBits, AsMutBits}};
 use heapless::Vec;
 use strum::EnumIter;
-use wasm4::{draw::DrawIndex, sys::{blit, BLIT_1BPP}, trace, tracef};
+use wasm4::draw::DrawIndex;
 
 use crate::gfx::texture::{Texture, TextureColors, TEXTURE_HEIGHT, TEXTURE_WIDTH};
 

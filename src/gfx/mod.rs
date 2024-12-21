@@ -6,12 +6,18 @@ use wasm4::draw::{DrawIndex, Framebuffer};
 pub mod texture;
 
 pub trait Vectorize {
-    fn vectorize(self) -> CVector<2>;
+    fn vectorize(self) -> CVector<3>;
+    fn devectorize(vector: CVector<3>) -> Self;
 }
 
 impl Vectorize for [f64; 2] {
-    fn vectorize(self) -> CVector<2> {
-        CVector::new([self])
+    fn vectorize(self) -> CVector<3> {
+        CVector::new([[self[0], self[1], 1.0]])
+    }
+
+    fn devectorize(vector: CVector<3>) -> Self {
+        let a = vector.finish()[0];
+        [a[0], a[1]]
     }
 }
 
