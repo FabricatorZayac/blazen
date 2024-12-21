@@ -11,6 +11,7 @@ codegen-units = 1
 panic = "abort"
 
 [dependencies]
+bit_reverse = { version = "0.1.8", default-features = false }
 bitvec = { version = "1.0.1", default-features = false }
 buddy-alloc = "0.6.0"
 constgebra = "0.1.4"

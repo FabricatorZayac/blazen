@@ -107,7 +107,7 @@ impl Blazen {
         //     card.rotate(0.01.into());
         // }
 
-        self.card_animators.update(&mut self.cards[1], (1.0/60.0*1000.0) as u32);
+        self.card_animators.update(&mut self.cards[3], (1.0/60.0*1000.0) as u32);
 
         self.prev_mouse = Some(self.mouse.state());
     }

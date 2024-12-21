@@ -21,10 +21,10 @@ impl CardState {
             card,
             origin,
             diff_vecs: [
-                [-15.0, -20.0],
-                [ 15.0, -20.0],
-                [ 15.0,  20.0],
-                [-15.0,  20.0],
+                [-16.0, -21.0],
+                [ 16.0, -21.0],
+                [ 16.0,  21.0],
+                [-16.0,  21.0],
             ],
             current_rotation: 0.0,
         }
@@ -40,7 +40,7 @@ impl CardState {
     pub fn rotate(&mut self, rad: f64) {
         let matrix = CMatrix::new(unsafe { [
             [ cosf64(rad), -sinf64(rad)],
-            [ sinf64(rad), cosf64(rad)],
+            [ sinf64(rad),  cosf64(rad)],
         ] });
 
         self.diff_vecs = self.diff_vecs
