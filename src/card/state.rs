@@ -1,7 +1,6 @@
-use constgebra::{CMatrix, CVector};
+use constgebra::CMatrix;
 
 use crate::animator::animation_state::AnimationState;
-use crate::gfx::texture::Texture;
 use crate::gfx::Vectorize;
 
 use super::{card::Card, view::CardView};
@@ -28,26 +27,21 @@ impl CardState {
             animations: heapless::Vec::new(),
         }
     }
-    pub fn texture(&self) -> [Texture; 2] {
-        self.card.texture()
-    }
-    pub fn vertices(&self) -> [[i32; 2]; 4] {
-        self.diff_vecs.map(|diff| CVector::new([self.origin.map(|i| i as f64)]).add(CVector::new([diff])).finish()[0].map(|f| f as i32))
-    }
-    pub fn origin(&self) -> [i32; 2] {
-        self.origin
-    }
-    pub fn view(&mut self) -> CardView {
+    pub fn view(&self) -> CardView {
         let transform = self.animate();
-        let vertices = self.apply_transform(transform);
-        CardView::new(self.texture(), vertices.map(|diff| CVector::new([self.origin.map(|i| i as f64)]).add(CVector::new([diff])).finish()[0].map(|f| f as i32)))
+        let vertices = self.apply_transform(transform).map(Vectorize::vectorize);
+        let origin = self.origin.map(|i| i as f64).vectorize();
+        CardView::new(
+            self.card.texture(),
+            vertices
+                .map(|vertex| vertex.add(origin))
+                .map(Vectorize::devectorize)
+                .map(|vertex: [f64; 2]| vertex.map(|f| f as i32))
+        )
     }
-}
-
-impl CardState {
-    fn animate(&mut self) -> CMatrix<3, 3> {
+    fn animate(&self) -> CMatrix<3, 3> {
         self.animations
-            .iter_mut()
+            .iter()
             .map(AnimationState::update)
             .reduce(CMatrix::mul)
             .unwrap_or(CMatrix::identity())
@@ -58,7 +52,9 @@ impl CardState {
             .map(|vec| vec.mul(matrix))
             .map(Vectorize::devectorize)
     }
+}
 
+impl CardState {
     pub fn add_animation(&mut self, animation: AnimationState) {
         self.animations.push(animation).unwrap();
     }

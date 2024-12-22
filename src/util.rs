@@ -1,21 +1,3 @@
-#[derive(Debug)]
-pub struct Angle(f64);
-
-impl Angle {
-    pub fn from_rad(rad: f64) -> Self {
-        Self(rad)
-    }
-    pub fn from_deg(deg: f64) -> Self {
-        Self(core::f64::consts::PI / 180.0 * deg)
-    }
-    pub fn as_rad(&self) -> f64 {
-        self.0
-    }
-    pub fn as_deg(&self) -> f64 {
-        self.0 * 180.0 / core::f64::consts::PI
-    }
-}
-
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct Duration(u32);
 
