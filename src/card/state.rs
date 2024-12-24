@@ -10,7 +10,7 @@ pub struct CardState {
     origin: [i32; 2],
     diff_vecs: [[f64; 2]; 4],
 
-    animations: heapless::Vec<AnimationState, 10>,
+    animations: heapless::Vec<AnimationState, 4>,
 }
 
 impl CardState {
@@ -41,9 +41,8 @@ impl CardState {
     }
     fn animate(&self) -> CMatrix<3, 3> {
         self.animations
-            .iter()
-            .map(AnimationState::update)
-            .reduce(CMatrix::mul)
+            .get(0)
+            .map_or(Some(CMatrix::identity()), AnimationState::update)
             .unwrap_or(CMatrix::identity())
     }
     fn apply_transform(&self, matrix: CMatrix<3, 3>) -> [[f64; 2]; 4] {
@@ -57,5 +56,16 @@ impl CardState {
 impl CardState {
     pub fn add_animation(&mut self, animation: AnimationState) {
         self.animations.push(animation).unwrap();
+    }
+    pub fn update(&mut self) {
+        let mut next: Option<AnimationState> = None;
+        if let Some(anim) = self.animations.get(0) {
+            if anim.finished() {
+                next = anim.get_next()
+            }
+        }
+        if let Some(anim) = next {
+            self.animations[0] = anim;
+        }
     }
 }

@@ -5,18 +5,18 @@ use crate::gfx::{
     texture::Texture,
 };
 
-pub struct CardView<'a> {
-    texture: [Texture<'a>; 2],
+pub struct CardView {
+    texture: [Texture; 2],
     vertices: [[i32; 2]; 4],
 }
 
-impl<'a> CardView<'a> {
-    pub fn new(texture: [Texture<'a>; 2], vertices: [[i32;2]; 4]) -> Self {
+impl CardView {
+    pub fn new(texture: [Texture; 2], vertices: [[i32;2]; 4]) -> Self {
         Self { texture, vertices }
     }
 }
 
-impl Render for CardView<'_> {
+impl Render for CardView {
     fn render(self, fb: &Framebuffer) {
         let t1 = Triangle {
             vertices: [self.vertices[0], self.vertices[1], self.vertices[3]],

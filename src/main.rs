@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-#![allow(internal_features)]
+#![allow(internal_features, static_mut_refs)]
 #![feature(core_intrinsics)]
 
 #[panic_handler]
@@ -9,7 +9,7 @@ fn panic_handler(_: &PanicInfo) -> ! {
     loop { }
 }
 
-mod alloc;
+// mod alloc;
 
 mod button;
 mod card;
@@ -19,7 +19,7 @@ mod util;
 
 use core::panic::PanicInfo;
 
-use animator::transform::{Rotate, Translate};
+use animator::transform::{Rotate, Shear, Translate};
 use util::Duration;
 use card::{card::{Card, Rank, Suit}, state::CardState};
 use gfx::Render;
@@ -51,9 +51,7 @@ impl FrameCounter {
 
 impl w4::rt::Runtime for Blazen {
     fn start(res: w4::rt::Resources) -> Self {
-        let bufptr = &raw mut LOG_BUF;
-        let buf = unsafe { bufptr.as_mut().unwrap() };
-        res.logger.init(buf);
+        res.logger.init(unsafe {LOG_BUF.as_mut_slice()});
 
         tracef!("Hello {}!", "logger");
 
@@ -83,17 +81,27 @@ impl w4::rt::Runtime for Blazen {
         // let translation: &dyn Transform = &Translate::new([0.0, 0.0], [100.0, 100.0]);
 
         this.cards[1].add_animation(AnimationState::new(
-            heapless::Vec::from_slice(&[
+            &[
                 Rotate::new(0.0, 270.0).into(),
                 Translate::new([0.0, 0.0], [100.0, 100.0]).into(),
-            ]).unwrap(),
+            ],
             Duration::from_secs(3.0),
+            Some(|| AnimationState::new(
+                &[
+                    Rotate::new(270.0, 0.0).into(),
+                    Translate::new([100.0, 100.0], [0.0, 0.0]).into(),
+                ],
+                Duration::from_secs(3.0),
+                None
+            )),
         ));
 
-        // this.cards[1].add_animation(AnimationState::new(
-        //     Transform::Translate([100.0, 100.0]),
-        //     Duration::from_secs(3.0),
-        // ));
+        tracef!("Sizeof AnimationState: {}", size_of::<AnimationState>());
+        tracef!("Sizeof CardState: {}", size_of::<CardState>());
+
+        this.cards[0].add_animation(AnimationState::new(&[
+            Shear::new([0.0, 0.0], [20.0, 20.0]).into()
+        ], Duration::from_secs(3.0), None));
 
         // this.cards[1].add_animation(AnimationState::new(
         //     Transform::Scale(2.0),
@@ -120,11 +128,16 @@ impl Blazen {
             Color(0xf0f0f0),
         ]);
 
+        self.cards
+            .iter_mut()
+            .for_each(CardState::update);
+
         self.prev_mouse = Some(self.mouse.state());
     }
 
     fn render(&self) {
-        self.cards.iter()
+        self.cards
+            .iter()
             .map(CardState::view)
             .for_each(|view| view.render(&self.fb));
     }

@@ -1,6 +1,6 @@
 use bitvec::{order::Msb0, view::AsBits};
 use constgebra::CVector;
-use texture::{TEXTURE_HEIGHT, TEXTURE_WIDTH, Texture, TextureColors};
+use texture::{Texture, TextureBuffer, TextureColors, TEXTURE_HEIGHT, TEXTURE_WIDTH};
 use wasm4::draw::{DrawIndex, Framebuffer};
 
 pub mod texture;
@@ -25,17 +25,17 @@ pub trait Render {
     fn render(self, fb: &Framebuffer);
 }
 
-pub struct Triangle<'a> {
+pub struct Triangle {
     pub vertices: [[i32; 2]; 3],
-    pub fill: TriangleFill<'a>,
+    pub fill: TriangleFill,
 }
 
-pub enum TriangleFill<'a> {
-    Texture(Texture<'a>),
+pub enum TriangleFill {
+    Texture(Texture),
     Color(DrawIndex),
 }
 
-impl Render for Triangle<'_> {
+impl Render for Triangle {
     fn render(self, fb: &Framebuffer) {
         let normal = self.normalize();
         for y in normal[0][1]..normal[1][1] {
@@ -68,7 +68,9 @@ impl Render for Triangle<'_> {
 
                             match texture.colors {
                                 TextureColors::OneBpp(idxs) => {
-                                    let bits = texture.buf.as_bits::<Msb0>();
+                                    // might replace with picking out the byte + bit offset
+                                    let buf = TextureBuffer::get();
+                                    let bits = buf.as_bits::<Msb0>();
                                     pixel(
                                         x,
                                         y,
@@ -91,7 +93,7 @@ impl Render for Triangle<'_> {
     }
 }
 
-impl Triangle<'_> {
+impl Triangle {
     fn normalize(&self) -> [[i32; 2]; 2] {
         let lx = self.vertices.iter().map(|v| v[0]).min().unwrap();
         let ly = self.vertices.iter().map(|v| v[1]).min().unwrap();

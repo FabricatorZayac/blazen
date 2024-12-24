@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [profile.release]
-opt-level = "z"
+opt-level = "s"
 lto = true
 strip = true
 codegen-units = 1
@@ -13,7 +13,7 @@ panic = "abort"
 [dependencies]
 bit_reverse = { version = "0.1.8", default-features = false }
 bitvec = { version = "1.0.1", default-features = false }
-buddy-alloc = "0.6.0"
+# buddy-alloc = "0.6.0"
 constgebra = "0.1.4"
 derive-new = { version = "0.7.0", default-features = false }
 derive_more = { version = "1.0.0", default-features = false, features = ["from", "into"] }

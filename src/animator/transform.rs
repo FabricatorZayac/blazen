@@ -12,6 +12,7 @@ pub enum Transformation {
     Rotate(Rotate),
     Translate(Translate),
     Scale(Scale),
+    Shear(Shear)
 }
 
 #[derive(Debug, new, Clone, Copy)]
@@ -26,6 +27,11 @@ pub struct Translate {
 }
 #[derive(Debug, new, Clone, Copy)]
 pub struct Scale {
+    start: [f64; 2],
+    end: [f64; 2],
+}
+#[derive(Debug, new, Clone, Copy)]
+pub struct Shear {
     start: [f64; 2],
     end: [f64; 2],
 }
@@ -66,6 +72,18 @@ impl Transform for Scale {
         ])
     }
 }
+// this seems to be broken for now
+impl Transform for Shear {
+    fn apply(&self, progress: f64) -> CMatrix<3, 3> {
+        let x = lerp(self.start[0], self.end[0], progress);
+        let y = lerp(self.start[1], self.end[1], progress);
+        CMatrix::new([
+            [ 1.0,   x, 0.0],
+            [   y, 1.0, 0.0],
+            [ 0.0, 0.0, 1.0],
+        ])
+    }
+}
 
 impl Transform for [Transformation] {
     fn apply(&self, progress: f64) -> CMatrix<3, 3> {
@@ -76,9 +94,11 @@ impl Transform for [Transformation] {
 impl Transform for Transformation {
     fn apply(&self, progress: f64) -> CMatrix<3, 3> {
         match self {
+            // this feels like it should be a macro, but whatever
             Transformation::Rotate(rotate) => rotate.apply(progress),
             Transformation::Translate(translate) => translate.apply(progress),
             Transformation::Scale(scale) => scale.apply(progress),
+            Transformation::Shear(shear) => shear.apply(progress),
         }
     }
 }

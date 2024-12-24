@@ -15,8 +15,4 @@ impl Duration {
     pub fn as_secs(&self) -> f32 {
         self.0 as f32 / 60.0
     }
-
-    pub fn step(&mut self) {
-        self.0 += 1;
-    }
 }

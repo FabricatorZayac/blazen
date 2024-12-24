@@ -1,3 +1,6 @@
+[alias]
+br = "build --release"
+
 [build]
 target = "wasm32-unknown-unknown"
 
@@ -5,6 +8,7 @@ target = "wasm32-unknown-unknown"
 rustflags = [
     # Import memory from WASM-4
     "-C", "link-arg=--import-memory",
+    # "-C", "link-arg=--initial-memory=131072",
     "-C", "link-arg=--initial-memory=65536",
     "-C", "link-arg=--max-memory=65536",
 
@@ -12,10 +16,11 @@ rustflags = [
     # Reserve 8192 bytes of Rust stack space, offset from 6560.
     # Bump this value, 16-byte aligned, if the framebuffer gets corrupted.
     "-C", "link-arg=-zstack-size=14752",
+
+    "-C", "link-arg=--compress-relocations",
 ]
+runner = "w4 run"
 
 [unstable]
 build-std = ["core"]
 build-std-features = ["panic_immediate_abort"]
-
-runner = "w4 run"
