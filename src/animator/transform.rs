@@ -78,8 +78,8 @@ impl Transform for Shear {
         let x = lerp(self.start[0], self.end[0], progress);
         let y = lerp(self.start[1], self.end[1], progress);
         CMatrix::new([
-            [ 1.0,   x, 0.0],
-            [   y, 1.0, 0.0],
+            [ 1.0,   y, 0.0],
+            [   x, 1.0, 0.0],
             [ 0.0, 0.0, 1.0],
         ])
     }

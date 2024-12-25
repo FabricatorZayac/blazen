@@ -1,6 +1,8 @@
 use constgebra::CMatrix;
+use wasm4::control::{Mouse, MouseState};
 
-use crate::animator::animation_state::AnimationState;
+use crate::animator::transform::{Rotate, Scale, Shear, Translate};
+use crate::{animator::animation_state::AnimationState, util::Duration};
 use crate::gfx::Vectorize;
 
 use super::{card::Card, view::CardView};
@@ -10,11 +12,11 @@ pub struct CardState {
     origin: [i32; 2],
     diff_vecs: [[f64; 2]; 4],
 
-    animations: heapless::Vec<AnimationState, 4>,
+    animation: Option<AnimationState>,
 }
 
 impl CardState {
-    pub fn new(card: Card, origin: [i32; 2]) -> Self {
+    pub fn new(card: Card, origin: [i32; 2], animation: Option<AnimationState>) -> Self {
         Self {
             card,
             origin,
@@ -24,7 +26,7 @@ impl CardState {
                 [ 16.0,  21.0],
                 [-16.0,  21.0],
             ],
-            animations: heapless::Vec::new(),
+            animation,
         }
     }
     pub fn view(&self) -> CardView {
@@ -40,8 +42,8 @@ impl CardState {
         )
     }
     fn animate(&self) -> CMatrix<3, 3> {
-        self.animations
-            .get(0)
+        self.animation
+            .as_ref()
             .map_or(Some(CMatrix::identity()), AnimationState::update)
             .unwrap_or(CMatrix::identity())
     }
@@ -51,21 +53,68 @@ impl CardState {
             .map(|vec| vec.mul(matrix))
             .map(Vectorize::devectorize)
     }
+    fn is_hovered(&self, mouse: &MouseState) -> bool {
+        let left   = (mouse.x as i32) > self.origin[0] - 15;
+        let right  = (mouse.x as i32) < self.origin[0] + 15;
+        let bottom = (mouse.y as i32) > self.origin[1] - 20;
+        let top    = (mouse.y as i32) < self.origin[1] + 20;
+        left && right && bottom && top
+    }
 }
 
 impl CardState {
-    pub fn add_animation(&mut self, animation: AnimationState) {
-        self.animations.push(animation).unwrap();
+    pub fn set_animation(&mut self, animation: AnimationState) {
+        self.animation = Some(animation);
     }
     pub fn update(&mut self) {
+        // default card animation
+        if self.animation.is_none() {
+            self.set_animation(anim1());
+        }
+
+        // replace animation when it ends
         let mut next: Option<AnimationState> = None;
-        if let Some(anim) = self.animations.get(0) {
+        if let Some(anim) = &self.animation {
             if anim.finished() {
                 next = anim.get_next()
             }
         }
         if let Some(anim) = next {
-            self.animations[0] = anim;
+            self.set_animation(anim);
         }
     }
+    pub fn handle_input(&mut self, mouse: &Mouse) {
+        if self.is_hovered(&mouse.state()) {
+            self.set_animation(hover_anim());
+
+            let m = mouse.state();
+            if m.buttons.left {
+                self.origin = [m.x as i32, m.y as i32];
+            }
+        }
+    }
+}
+
+fn hover_anim() -> AnimationState {
+    AnimationState::new(
+        &[Scale::new([1.8, 1.8], [1.0, 1.0]).into()],
+        Duration::from_secs(0.1),
+        Some(anim1),
+    )
+}
+
+fn anim1() -> AnimationState {
+    AnimationState::new(&[
+        Rotate::new(-10.0, 10.0).into(),
+        Shear::new([-0.2, 0.0], [0.2, 0.0]).into(),
+        Translate::new([-2.0, -2.0], [2.0, 2.0]).into(),
+    ], Duration::from_secs(2.0), Some(anim2))
+}
+
+fn anim2() -> AnimationState {
+    AnimationState::new(&[
+        Rotate::new(10.0, -10.0).into(),
+        Shear::new([0.2, 0.0], [-0.2, 0.0]).into(),
+        Translate::new([2.0, 2.0], [-2.0, -2.0]).into(),
+    ], Duration::from_secs(2.0), Some(anim1))
 }

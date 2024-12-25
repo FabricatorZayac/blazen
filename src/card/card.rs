@@ -91,11 +91,28 @@ impl Card {
         let mut buf = TextureBuffer::get_mut();
         let bitbuf = buf.as_mut_bits::<Msb0>();
 
-        font_into_buffer(bitbuf, self.rank as usize, 60 + 2, false);
+        font_into_buffer(
+            bitbuf,
+            self.rank as usize,
+            60 + 2,
+            false
+        );
         font_into_buffer(
             bitbuf,
             self.rank as usize,
             4800 - TEXTURE_WIDTH * (FONT_HEIGHT + 1) - FONT_WIDTH - 2,
+            true,
+        );
+        font_into_buffer(
+            bitbuf,
+            self.suit as usize + 13,
+            TEXTURE_WIDTH * (FONT_HEIGHT + 2) + 2,
+            false,
+        );
+        font_into_buffer(
+            bitbuf,
+            self.suit as usize + 13,
+            4800 - TEXTURE_WIDTH * (FONT_HEIGHT * 2 + 2) - FONT_WIDTH - 2,
             true,
         );
 
