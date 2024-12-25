@@ -28,7 +28,7 @@ impl Deck {
         }
     }
 
-    pub fn get(&self, idx: usize) -> &Card {
-        &self.cards[idx]
+    pub fn get(&self, idx: usize) -> Option<&Card> {
+        self.cards.get(idx)
     }
 }

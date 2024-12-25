@@ -1,7 +1,8 @@
 use constgebra::CMatrix;
-use wasm4::control::{Mouse, MouseState};
+use wasm4::control::MouseState;
 
 use crate::animator::transform::{Rotate, Scale, Shear, Translate};
+use crate::MouseSemaphore;
 use crate::{animator::animation_state::AnimationState, util::Duration};
 use crate::gfx::Vectorize;
 
@@ -53,11 +54,17 @@ impl CardState {
             .map(|vec| vec.mul(matrix))
             .map(Vectorize::devectorize)
     }
-    fn is_hovered(&self, mouse: &MouseState) -> bool {
-        let left   = (mouse.x as i32) > self.origin[0] - 15;
-        let right  = (mouse.x as i32) < self.origin[0] + 15;
-        let bottom = (mouse.y as i32) > self.origin[1] - 20;
-        let top    = (mouse.y as i32) < self.origin[1] + 20;
+    fn is_hovered(&self, mouse: &mut MouseSemaphore) -> bool {
+        if mouse.lock {
+            return false;
+        }
+
+        let m = mouse.state().unwrap();
+
+        let left   = (m.x as i32) > self.origin[0] - 15;
+        let right  = (m.x as i32) < self.origin[0] + 15;
+        let bottom = (m.y as i32) > self.origin[1] - 20;
+        let top    = (m.y as i32) < self.origin[1] + 20;
         left && right && bottom && top
     }
 }
@@ -83,11 +90,15 @@ impl CardState {
             self.set_animation(anim);
         }
     }
-    pub fn handle_input(&mut self, mouse: &Mouse) {
-        if self.is_hovered(&mouse.state()) {
+    pub fn handle_input(&mut self, mouse: &mut MouseSemaphore) {
+        if mouse.state().is_none() {
+            return;
+        }
+        if self.is_hovered(mouse) {
+            let m = mouse.state().unwrap();
+            mouse.lock();
             self.set_animation(hover_anim());
 
-            let m = mouse.state();
             if m.buttons.left {
                 self.origin = [m.x as i32, m.y as i32];
             }

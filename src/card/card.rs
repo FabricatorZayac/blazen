@@ -117,66 +117,69 @@ impl Card {
         );
 
         if !self.is_face() && self.rank != Rank::Ace {
+
+            let x1 = 15;
+            let x2 = 60 - 15 - FONT_WIDTH;
+            let x3 = TEXTURE_WIDTH as usize / 2 - (FONT_WIDTH / 2);
             let vec: Vec<(usize, bool), 10> = match self.rank {
-                Rank::Two => {
-                    Vec::from_slice(&[
-                        (25 + 60 * 10, false),
-                        (25 + 60 * 60, true),
-                    ]).unwrap()
-                },
-                // Rank::Three => Vec::from_slice(&[
-                //     (25 + 60 * 10, false),
-                //     (25 + 60 * 30, false),
-                //     (25 + 60 * 60, true),
-                // ]).unwrap(),
-                // Rank::Four => Vec::from_slice(&[
-                //     (15 + 60 * 10, false), (40 + 60 * 30, false),
-                //     (15 + 60 * 60, true), (40 + 60 * 60, true),
-                // ]).unwrap(),
-                // Rank::Five => Vec::from_slice(&[
-                //     (15 + 60 * 10, false), (40 + 60 * 30, false),
-                //     (25 + 60 * 30, false),
-                //     (15 + 60 * 60, true), (40 + 60 * 60, true),
-                // ]).unwrap(),
-                // Rank::Six => Vec::from_slice(&[
-                //     (15 + 60 * 10, false), (40 + 60 * 30, false),
-                //     (15 + 60 * 30, false), (40 + 60 * 30, false),
-                //     (15 + 60 * 60, true), (40 + 60 * 60, true),
-                // ]).unwrap(),
-                // Rank::Seven => Vec::from_slice(&[
-                //     (15 + 60 * 10, false), (40 + 60 * 30, false),
-                //     (25 + 60 * 20, false),
-                //     (15 + 60 * 30, false), (40 + 60 * 30, false),
-                //     (15 + 60 * 60, true), (40 + 60 * 60, true),
-                // ]).unwrap(),
-                Rank::Eight =>  {
-                    let x1 = 15;
-                    let x2 = 60 - 15 - FONT_WIDTH;
-                    let x3 = TEXTURE_WIDTH as usize / 2 - (FONT_WIDTH / 2);
-                    Vec::from_slice(&[
-                        (x1 + 60 * 9, false), (x2 + 60 * 9, false),
-                        (x3 + 60 * 20, false),
-                        (x1 + 60 * 35, false), (x2 + 60 * 35, false),
-                        (x3 + 60 * 49, true),
-                        (x1 + 60 * 61, true), (x2 + 60 * 61, true),
-                    ]).unwrap()
-                },
-                // TODO:
+                Rank::Two => Vec::from_slice(&[
+                    (x3 + 60 * 10, false),
+                    (x3 + 60 * 60, true),
+                ]).unwrap(),
+                Rank::Three => Vec::from_slice(&[
+                    (x3 + 60 * 10, false),
+                    (x3 + 60 * 35, false),
+                    (x3 + 60 * 60, true),
+                ]).unwrap(),
+                Rank::Four => Vec::from_slice(&[
+                    (x1 + 60 * 10, false), (x2 + 60 * 10, false),
+                    (x1 + 60 * 60, true), (x2 + 60 * 60, true),
+                ]).unwrap(),
+                Rank::Five => Vec::from_slice(&[
+                    (x1 + 60 * 10, false), (x2 + 60 * 10, false),
+                    (x3 + 60 * 35, false),
+                    (x1 + 60 * 60, true), (x2 + 60 * 60, true),
+                ]).unwrap(),
+                Rank::Six => Vec::from_slice(&[
+                    (x1 + 60 * 10, false), (x2 + 60 * 10, false),
+                    (x1 + 60 * 35, false), (x2 + 60 * 35, false),
+                    (x1 + 60 * 60, true),  (x2 + 60 * 60, true),
+                ]).unwrap(),
+                Rank::Seven => Vec::from_slice(&[
+                    (x1 + 60 * 10, false), (x2 + 60 * 10, false),
+                    (x3 + 60 * 23, false),
+                    (x1 + 60 * 35, false), (x2 + 60 * 35, false),
+                    (x1 + 60 * 60, true),  (x2 + 60 * 60, true),
+                ]).unwrap(),
+                Rank::Eight => Vec::from_slice(&[
+                    (x1 + 60 * 9, false), (x2 + 60 * 9, false),
+                    (x3 + 60 * 20, false),
+                    (x1 + 60 * 35, false), (x2 + 60 * 35, false),
+                    (x3 + 60 * 49, true),
+                    (x1 + 60 * 61, true), (x2 + 60 * 61, true),
+                ]).unwrap(),
+                Rank::Nine => Vec::from_slice(&[
+                    (x1 + 60 * 10, false), (x2 + 60 * 10, false),
+                    (x3 + 60 * 17, false),
+                    (x1 + 60 * 25, false), (x2 + 60 * 25, false),
+                    (x1 + 60 * 45, true), (x2 + 60 * 45, true),
+                    (x1 + 60 * 60, true),  (x2 + 60 * 60, true),
+                ]).unwrap(),
+                Rank::Ten => Vec::from_slice(&[
+                    (x1 + 60 * 10, false), (x2 + 60 * 10, false),
+                    (x3 + 60 * 17, false),
+                    (x1 + 60 * 25, false), (x2 + 60 * 25, false),
+                    (x1 + 60 * 45, true), (x2 + 60 * 45, true),
+                    (x3 + 60 * 53, true),
+                    (x1 + 60 * 60, true),  (x2 + 60 * 60, true),
+                ]).unwrap(),
                 _ => unreachable!(),
-
             };
-
-            // let suit_idx = 99 * self.suit as usize + 99 * 13;
-
             // trace("drawing pattern...");
             for (draw_idx, flip) in vec {
                 font_into_buffer(bitbuf, (self.suit as usize) + 13, draw_idx, flip);
             }
         }
-
-        // unsafe {
-        //     blit(&raw const TEXTURE_BUFFER[0], 0, 0, TEXTURE_WIDTH as u32, TEXTURE_HEIGHT as u32, BLIT_1BPP);
-        // }
 
         let colors = match self.suit {
             Suit::Spade | Suit::Club => TextureColors::OneBpp([DrawIndex::Fourth, DrawIndex::Second]),
