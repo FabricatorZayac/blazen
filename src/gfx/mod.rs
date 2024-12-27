@@ -22,7 +22,7 @@ impl Vectorize for [f64; 2] {
 }
 
 pub trait Render {
-    fn render(self, fb: &Framebuffer);
+    fn render(&self, fb: &Framebuffer);
 }
 
 pub struct Triangle {
@@ -36,7 +36,7 @@ pub enum TriangleFill {
 }
 
 impl Render for Triangle {
-    fn render(self, fb: &Framebuffer) {
+    fn render(&self, fb: &Framebuffer) {
         let normal = self.normalize();
         for y in normal[0][1]..normal[1][1] {
             for x in normal[0][0]..normal[1][0] {

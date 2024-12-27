@@ -1,5 +1,6 @@
 use super::card::{Card, Rank, Suit};
 use heapless::Vec;
+use rand::{seq::SliceRandom, Rng};
 use strum::IntoEnumIterator;
 
 pub enum DeckType {
@@ -8,13 +9,13 @@ pub enum DeckType {
 }
 
 pub struct Deck {
-    cards: Vec<Card, 255>,
+    cards: Vec<Card, 256>,
     kind: DeckType,
 }
 
 impl Deck {
     pub fn new() -> Self {
-        let mut cards: Vec<Card, 255> = Vec::new();
+        let mut cards: Vec<Card, 256> = Vec::new();
 
         for suit in Suit::iter() {
             for rank in Rank::iter() {
@@ -30,5 +31,13 @@ impl Deck {
 
     pub fn get(&self, idx: usize) -> Option<&Card> {
         self.cards.get(idx)
+    }
+
+    pub fn draw(&mut self) -> Option<Card> {
+        self.cards.pop()
+    }
+
+    pub fn shuffle<T: Rng>(&mut self, rng: &mut T) {
+        self.cards.shuffle(rng);
     }
 }

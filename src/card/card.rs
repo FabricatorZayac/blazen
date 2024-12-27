@@ -6,7 +6,7 @@ use wasm4::draw::DrawIndex;
 
 use crate::gfx::texture::{Texture, TextureBuffer, TextureColors, TEXTURE_HEIGHT, TEXTURE_WIDTH};
 
-#[derive(Debug, PartialEq, EnumIter, Clone, Copy)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, EnumIter, Clone, Copy)]
 pub enum Suit {
     Spade,
     Heart,
@@ -14,7 +14,7 @@ pub enum Suit {
     Diamond,
 }
 
-#[derive(Debug, PartialEq, EnumIter, Clone, Copy)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, EnumIter, Clone, Copy)]
 pub enum Rank {
     Two,
     Three,
@@ -51,32 +51,32 @@ impl Rank {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub enum Enhancement {
-    Point,
-    Mult,
-    Stone,
-    Glass,
-}
+// #[derive(Debug, PartialEq, PartialOrd)]
+// pub enum Enhancement {
+//     Point,
+//     Mult,
+//     Stone,
+//     Glass,
+// }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
 pub struct Card {
     suit: Suit,
     rank: Rank,
-    enhancement: Option<Enhancement>,
+    // enhancement: Option<Enhancement>,
 }
-
+ 
 impl Card {
     pub fn new(suit: Suit, rank: Rank) -> Self {
         Self {
             suit,
             rank,
-            enhancement: None,
+            // enhancement: None,
         }
     }
-    pub fn enhance(&mut self, enhancement: Enhancement) {
-        self.enhancement = Some(enhancement);
-    }
+    // pub fn enhance(&mut self, enhancement: Enhancement) {
+    //     self.enhancement = Some(enhancement);
+    // }
     pub fn is_face(&self) -> bool {
         match self.rank {
             Rank::Jack | Rank::Queen | Rank::King => true,

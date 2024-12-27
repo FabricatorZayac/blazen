@@ -17,7 +17,7 @@ impl CardView {
 }
 
 impl Render for CardView {
-    fn render(self, fb: &Framebuffer) {
+    fn render(&self, fb: &Framebuffer) {
         let t1 = Triangle {
             vertices: [self.vertices[0], self.vertices[1], self.vertices[3]],
             fill: TriangleFill::Texture(self.texture[0]),
