@@ -1,13 +1,17 @@
 use constgebra::CMatrix;
+use wasm4::control::MouseState;
 
-use crate::animator::transform::{Rotate, Scale, Translate};
+use crate::message::{Message, MESSAGE_BUF};
 use crate::MouseSemaphore;
-use crate::{animator::animation_state::AnimationState, util::Duration};
+use crate::animator::animation_state::AnimationState;
 use crate::gfx::{Render, Triangle, TriangleFill, Vectorize};
 
+use super::animations::{hover_anim, idle1};
 use super::card::Card;
 
+#[derive(Debug)]
 pub struct CardState {
+    id: usize,
     card: Card,
     origin: [i32; 2],
     diff_vecs: [[f64; 2]; 4],
@@ -16,8 +20,9 @@ pub struct CardState {
 }
 
 impl CardState {
-    pub fn new(card: Card, origin: [i32; 2], animation: Option<AnimationState>) -> Self {
+    pub fn new(id: usize, card: Card, origin: [i32; 2], animation: Option<AnimationState>) -> Self {
         Self {
+            id,
             card,
             origin,
             diff_vecs: [
@@ -41,17 +46,12 @@ impl CardState {
             .map(|vec| vec.mul(matrix))
             .map(Vectorize::devectorize)
     }
-    fn is_hovered(&self, mouse: &MouseSemaphore) -> bool {
-        match mouse.state() {
-            Some(m) => {
-                let left   = (m.x as i32) > self.origin[0] - 16;
-                let right  = (m.x as i32) < self.origin[0] + 16;
-                let bottom = (m.y as i32) > self.origin[1] - 21;
-                let top    = (m.y as i32) < self.origin[1] + 21;
-                left && right && bottom && top
-            }
-            None => false,
-        }
+    fn is_hovered(&self, mouse: &MouseState) -> bool {
+        let left   = (mouse.x as i32) > self.origin[0] - 16;
+        let right  = (mouse.x as i32) < self.origin[0] + 16;
+        let bottom = (mouse.y as i32) > self.origin[1] - 21;
+        let top    = (mouse.y as i32) < self.origin[1] + 21;
+        left && right && bottom && top
     }
 }
 
@@ -77,17 +77,18 @@ impl CardState {
         }
     }
     pub fn handle_input(&mut self, mouse: &MouseSemaphore) {
-        if mouse.state().is_none() {
-            return;
-        }
-        if self.is_hovered(mouse) {
-            // let m = mouse.state().unwrap();
-            mouse.lock();
-            self.set_animation(hover_anim());
+        if let Some(m) = mouse.state() {
+            if self.is_hovered(&m) {
+                mouse.lock();
+                self.set_animation(hover_anim());
 
-            // if m.buttons.left {
-            //     self.origin = [m.x as i32, m.y as i32];
-            // }
+                if m.buttons.left
+                && !mouse.prev.as_ref().unwrap().buttons.left {
+                    unsafe {
+                        MESSAGE_BUF = Some(Message::CardClicked(self.id));
+                    }
+                }
+            }
         }
     }
 }
@@ -115,44 +116,4 @@ impl Render for CardState {
         t1.render(fb);
         t2.render(fb);
     }
-}
-
-fn hover_anim() -> AnimationState {
-    AnimationState::new(
-        &[Scale::new([1.3, 1.3], [1.0, 1.0]).into()],
-        Duration::from_secs(0.1),
-        Some(idle1),
-    )
-}
-
-pub fn idle1() -> AnimationState {
-    AnimationState::new(&[
-        Rotate::new(5.0, 0.0).into(),
-        // Shear::new([-0.2, 0.0], [0.2, 0.0]).into(),
-        Translate::new([-1.0, 1.0], [1.0, 1.0]).into(),
-    ], Duration::from_secs(1.0), Some(idle2))
-}
-
-fn idle2() -> AnimationState {
-    AnimationState::new(&[
-        Rotate::new(0.0, -5.0).into(),
-        // Shear::new([0.2, 0.0], [-0.2, 0.0]).into(),
-        Translate::new([1.0, 1.0], [1.0, -1.0]).into(),
-    ], Duration::from_secs(1.0), Some(idle3))
-}
-
-fn idle3() -> AnimationState {
-    AnimationState::new(&[
-        Rotate::new(-5.0, 0.0).into(),
-        // Shear::new([0.2, 0.0], [-0.2, 0.0]).into(),
-        Translate::new([1.0, -1.0], [-1.0, -1.0]).into(),
-    ], Duration::from_secs(1.0), Some(idle4))
-}
-
-fn idle4() -> AnimationState {
-    AnimationState::new(&[
-        Rotate::new(0.0, 5.0).into(),
-        // Shear::new([0.2, 0.0], [-0.2, 0.0]).into(),
-        Translate::new([-1.0, -1.0], [-1.0, 1.0]).into(),
-    ], Duration::from_secs(1.0), Some(idle1))
 }

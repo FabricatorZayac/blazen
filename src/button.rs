@@ -1,4 +1,6 @@
-use wasm4::draw::{DrawIndex, Framebuffer};
+use core::fmt::{Debug, Write};
+
+use wasm4::{draw::{DrawIndex, Framebuffer}, tracef};
 
 use crate::{gfx::Render, message::{Message, MESSAGE_BUF}, MouseSemaphore};
 
@@ -9,6 +11,26 @@ pub struct Button {
     fill: DrawIndex,
     outline: DrawIndex,
     onclick: Message,
+}
+
+impl Debug for Button {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let idx = |idx: DrawIndex| match idx {
+            DrawIndex::Transparent => "Transparent",
+            DrawIndex::First => "First",
+            DrawIndex::Second => "Second",
+            DrawIndex::Third => "Third",
+            DrawIndex::Fourth => "Fourth",
+        };
+
+        f.debug_struct("Button")
+            .field("start", &self.start)
+            .field("text", &self.text)
+            .field_with("fill", |f| f.write_str(idx(self.fill)))
+            .field_with("outline", |f| f.write_str(idx(self.outline)))
+            .field("onclick", &self.onclick)
+            .finish()
+    }
 }
 
 impl Render for Button {

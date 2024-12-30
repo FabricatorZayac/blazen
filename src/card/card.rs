@@ -4,7 +4,7 @@ use heapless::Vec;
 use strum::EnumIter;
 use wasm4::draw::DrawIndex;
 
-use crate::gfx::texture::{Texture, TextureBuffer, TextureColors, TEXTURE_HEIGHT, TEXTURE_WIDTH};
+use crate::gfx::texture::{Texture, TextureColors, TEXTURE_BUFFER, TEXTURE_HEIGHT, TEXTURE_WIDTH};
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, EnumIter, Clone, Copy)]
 pub enum Suit {
@@ -59,7 +59,7 @@ impl Rank {
 //     Glass,
 // }
 
-#[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone)]
 pub struct Card {
     suit: Suit,
     rank: Rank,
@@ -74,6 +74,9 @@ impl Card {
             // enhancement: None,
         }
     }
+    pub fn suit(&self) -> Suit {
+        self.suit
+    }
     // pub fn enhance(&mut self, enhancement: Enhancement) {
     //     self.enhancement = Some(enhancement);
     // }
@@ -84,11 +87,10 @@ impl Card {
         }
     }
     pub fn texture(&self) -> [Texture; 2] {
-        // tracef!("Building texture {:?} of {:?}s", self.rank, self.suit);
         // let buf = &ACE_OF_SPADES;
 
-        TextureBuffer::init();
-        let mut buf = TextureBuffer::get_mut();
+        let mut buf = unsafe { TEXTURE_BUFFER.as_mut() }.unwrap().get_mut();
+        buf.fill(0);
         let bitbuf = buf.as_mut_bits::<Msb0>();
 
         font_into_buffer(

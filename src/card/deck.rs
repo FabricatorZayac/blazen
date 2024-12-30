@@ -1,16 +1,18 @@
+use core::ops::Deref;
+
 use super::card::{Card, Rank, Suit};
 use heapless::Vec;
 use rand::{seq::SliceRandom, Rng};
 use strum::IntoEnumIterator;
 
-pub enum DeckType {
-    Default,
-    // TODO: potentially add deck effects maybe
-}
+// pub enum DeckType {
+//     Default,
+//     // TODO: potentially add deck effects maybe
+// }
 
 pub struct Deck {
     cards: Vec<Card, 256>,
-    kind: DeckType,
+    // kind: DeckType,
 }
 
 impl Deck {
@@ -25,12 +27,8 @@ impl Deck {
 
         Self {
             cards,
-            kind: DeckType::Default,
+            // kind: DeckType::Default,
         }
-    }
-
-    pub fn get(&self, idx: usize) -> Option<&Card> {
-        self.cards.get(idx)
     }
 
     pub fn draw(&mut self) -> Option<Card> {
@@ -39,5 +37,13 @@ impl Deck {
 
     pub fn shuffle<T: Rng>(&mut self, rng: &mut T) {
         self.cards.shuffle(rng);
+    }
+}
+
+impl Deref for Deck {
+    type Target = [Card];
+
+    fn deref(&self) -> &Self::Target {
+        self.cards.as_slice()
     }
 }

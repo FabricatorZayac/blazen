@@ -2,7 +2,7 @@
 #![no_main]
 
 #![allow(internal_features, static_mut_refs)]
-#![feature(core_intrinsics, coerce_unsized)]
+#![feature(core_intrinsics, coerce_unsized, debug_closure_helpers)]
 
 use core::{arch::wasm32::unreachable, cell::Cell, mem::MaybeUninit, panic::PanicInfo};
 #[panic_handler]
@@ -10,7 +10,6 @@ fn panic_handler(_: &PanicInfo) -> ! {
     unreachable()
 }
 
-// mod alloc;
 mod button;
 mod card;
 mod gfx;
@@ -19,13 +18,13 @@ mod util;
 mod scene;
 mod message;
 
+use card::state::CardState;
+use gfx::texture::{TextureBuffer, TEXTURE_BUFFER};
 use message::Message;
-use scene::{Demo, Menu, Scene};
+use scene::{DeckScene, Demo, Menu, Scene, ScenePtr as _, DEMO};
 use wasm4::{
     self as w4, control::{Mouse, MouseState}, draw::{Color, Framebuffer}, tracef
 };
-
-static mut LOG_BUF: MaybeUninit<[u8; 200]> = MaybeUninit::uninit();
 
 static mut FRAME_COUNT: u32 = 0;
 struct FrameCounter;
@@ -88,15 +87,24 @@ struct Blazen {
     scene: &'static mut dyn Scene,
 }
 
+static mut LOG_BUF: MaybeUninit<[u8; 200]> = MaybeUninit::uninit();
 impl w4::rt::Runtime for Blazen {
     fn start(res: w4::rt::Resources) -> Self {
         res.logger.init(unsafe {LOG_BUF.assume_init_mut()});
 
+        Menu::init();
+
         tracef!("Hello {}!", "logger");
         tracef!("__heap_base: {:?}", &raw const __heap_base);
+        tracef!("sizeof CardState: {}", size_of::<CardState>());
+        tracef!("sizeof DeckScene: {}", size_of::<DeckScene>());
 
-        Menu::init();
-        Demo::init();
+        tracef!("sizeof TextureBuffer: {}", size_of::<TextureBuffer>());
+        tracef!("TEXTURE_BUFFER: {:?}", TEXTURE_BUFFER);
+
+        tracef!("sizeof Demo: {}", size_of::<Demo>());
+        tracef!("DEMO: {:?}", DEMO);
+
 
         Blazen {
             fb: res.framebuffer,
@@ -113,31 +121,34 @@ impl w4::rt::Runtime for Blazen {
             Color(0xf0f0f0),
         ]);
         self.scene.update(&self.mouse);
-        if let Some(msg) = unsafe { message::MESSAGE_BUF } {
-            match msg {
-                Message::Start => {
-                    self.scene = Demo::get();
-                },
-            }
-        }
-
         self.scene.render(&self.fb);
-
-        unsafe {
-            if let Some(msg) = message::MESSAGE_BUF {
-                tracef!("{:?}", msg)
+        match unsafe { message::MESSAGE_BUF } {
+            Some(Message::Start) => {
+                DEMO.init();
+                self.scene = unsafe {DEMO.as_mut()}.unwrap();
             }
+            Some(Message::DeckClicked) => {
+                self.scene = unsafe {DEMO.as_ref()}.unwrap().get_deck().into();
+            },
+            Some(Message::BackToGame) => {
+                self.scene = unsafe {DEMO.as_mut()}.unwrap();
+            },
+            _ => (),
         }
 
-        self.mouse.update();
+        // cleanup
+        if let Some(msg) = unsafe { message::MESSAGE_BUF } {
+            tracef!("{:?}", msg)
+        }
         unsafe { message::MESSAGE_BUF = None };
+        self.mouse.update();
         Entropy::update(&self.mouse.state().unwrap());
         FrameCounter::increment();
     }
 }
 
 unsafe extern "C" {
-    static __heap_base: u8;
+    static mut __heap_base: u8;
 }
 
 w4::main! { Blazen }

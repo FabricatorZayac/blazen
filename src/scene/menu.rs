@@ -1,11 +1,16 @@
 use core::mem::MaybeUninit;
 
-use crate::{button::Button, card::{card::{Card, Rank, Suit}, state::{idle1, CardState}}, gfx::Render, message::Message, MouseSemaphore};
+use crate::{
+    button::Button,
+    card::{state::CardState, Card, Rank, Suit},
+    gfx::Render,
+    message::Message,
+    MouseSemaphore,
+};
 
 use super::Scene;
 
 static mut MENU: MaybeUninit<Menu> = MaybeUninit::uninit();
-
 pub struct Menu {
     ace: CardState,
     start: Button,
@@ -19,9 +24,10 @@ impl Menu {
     fn new() -> Self {
         Self {
             ace: CardState::new(
+                0,
                 Card::new(Suit::Spade, Rank::Ace),
                 [80, 60],
-                Some(idle1()),
+                None,
             ),
             start: Button::new(
                 [30, 100],

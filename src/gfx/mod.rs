@@ -1,6 +1,6 @@
 use bitvec::{order::Msb0, view::AsBits};
 use constgebra::CVector;
-use texture::{Texture, TextureBuffer, TextureColors, TEXTURE_HEIGHT, TEXTURE_WIDTH};
+use texture::{Texture, TextureColors, TEXTURE_BUFFER, TEXTURE_HEIGHT, TEXTURE_WIDTH};
 use wasm4::draw::{DrawIndex, Framebuffer};
 
 pub mod texture;
@@ -69,7 +69,7 @@ impl Render for Triangle {
                             match texture.colors {
                                 TextureColors::OneBpp(idxs) => {
                                     // might replace with picking out the byte + bit offset
-                                    let buf = TextureBuffer::get();
+                                    let buf = unsafe {TEXTURE_BUFFER.as_ref().unwrap()}.get();
                                     let bits = buf.as_bits::<Msb0>();
                                     pixel(
                                         x,
