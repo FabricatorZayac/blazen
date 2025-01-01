@@ -91,12 +91,7 @@ impl MessageHandler for Blazen {
                 DEMO.init();
                 self.scene = DEMO.get();
             }
-            // Some(Message::DeckClicked) => {
-            //     self.scene = unsafe {DEMO.as_ref()}.unwrap().get_deck().into();
-            // },
-            Some(Message::BackToGame) => {
-                self.scene = unsafe {DEMO.as_mut()}.unwrap();
-            },
+            Some(Message::BackToGame) => self.scene = DEMO.get(),
             _ => (),
         }
     }

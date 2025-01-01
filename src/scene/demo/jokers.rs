@@ -19,8 +19,10 @@ impl Default for Jokers {
     fn default() -> Self {
         let mut jokers = heapless::Vec::new(); 
 
+        // For testing purposes
         jokers.push(CardState::new(
-            100,
+            // Jokers ids starting at 0x100
+            0x100,
             CardData::Joker(Joker::new(JokerType::Jimbo)),
             [80, 44],
             None,

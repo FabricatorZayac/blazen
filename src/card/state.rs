@@ -83,6 +83,10 @@ impl CardState {
     pub fn id(&self) -> usize {
         self.id
     }
+
+    pub fn set_id(&mut self, id: usize) {
+        self.id = id;
+    }
 }
 
 impl CardState {

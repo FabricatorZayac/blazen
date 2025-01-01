@@ -1,3 +1,5 @@
+use rand::{rngs::SmallRng, RngCore as _};
+
 use crate::{
     animator::{
         animation_state::AnimationState,
@@ -5,6 +7,16 @@ use crate::{
     },
     util::Duration,
 };
+
+pub fn random_idle(rng: &mut SmallRng) -> fn() -> AnimationState {
+    match rng.next_u32() % 4 {
+        0 => idle1,
+        1 => idle2,
+        2 => idle3,
+        3 => idle4,
+        _ => unreachable!(),
+    }
+}
 
 pub fn idle1() -> AnimationState {
     AnimationState::new(&[

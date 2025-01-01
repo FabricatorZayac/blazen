@@ -1,6 +1,6 @@
-use hand_state::HandState;
+use crate::{animator::{animation_state::AnimationState, transform::{Rotate, Translate}}, card::{animations::random_idle, state::CardData}, util::Duration, CardState};
 use jokers::Jokers;
-use rand::{rngs::SmallRng, SeedableRng};
+use rand::{rngs::SmallRng, RngCore as _, SeedableRng};
 use wasm4::{draw::DrawIndex, format::format_no_std, tracef};
 
 use crate::{
@@ -10,7 +10,7 @@ use crate::message::{InputHandler, Message, MessageHandler, Reader, Writer};
 use crate::gfx::{texture::TEXTURE_BUFFER, Render};
 use super::{Scene, ScenePtr};
 
-mod hand_state;
+// mod hand_state;
 mod jokers;
 
 pub const DEMO: *mut Demo = TEXTURE_BUFFER.wrapping_add(1) as *mut Demo;
@@ -41,13 +41,19 @@ pub struct Demo {
     deck_button: Button,
 
     jokers: Jokers,
-
     hand: HandState,
+
     play_button: Button,
     discard_button: Button,
 
     target: f32,
     score: f32,
+
+    max_hands: u8,
+    rem_hands: u8,
+
+    max_discards: u8,
+    rem_discards: u8,
 }
 impl Demo {
     pub fn new() -> Self {
@@ -63,20 +69,16 @@ impl Demo {
                 DrawIndex::Fourth,
                 Message::DeckClicked,
             ),
-
-            jokers: Default::default(),
-
-            hand: Default::default(),
             play_button: Button::new(
-                [125, 93],
+                [125, 68],
                 "Play",
                 DrawIndex::Third,
                 DrawIndex::Second,
                 Message::PlayHand,
             ),
             discard_button: Button::new(
-                [125, 82],
-                "Dscd",
+                [0, 68],
+                "Discard",
                 DrawIndex::Second,
                 DrawIndex::Third,
                 Message::DiscardHand,
@@ -84,10 +86,15 @@ impl Demo {
 
             target: 400.0,
             score: 0.0,
+
+            jokers: Default::default(),
+            hand: Default::default(),
+
+            max_hands: 4,
+            max_discards: 3,
+            rem_hands: Default::default(),
+            rem_discards: Default::default(),
         }
-    }
-    pub fn get_deck(&self) -> &Deck {
-        &self.deck
     }
 }
 impl Scene for Demo {
@@ -99,17 +106,32 @@ impl Scene for Demo {
                 self.deck.shuffle(&mut self.rng);
                 self.hand.fill(&mut self.deck, &mut self.rng);
                 self.state = DemoState::Idle;
+                self.rem_discards = self.max_discards;
+                self.rem_hands = self.max_hands;
             },
             DemoState::Idle => { },
             DemoState::HandInProgress => { }, 
             DemoState::HandEnd => { },
         }
-        self.hand.update(&self.state);
+        // Selection hold
+        for i in self.hand.selected.iter() {
+            self.hand.cards[*i].set_animation(AnimationState::new(
+                &[Translate::new([0.0, -10.0], [0.0, 0.0]).into()],
+                Duration::from_secs(0.1),
+                None,
+            ));
+        }
+        self.hand.cards
+            .iter_mut()
+            .for_each(CardState::update);
+
         self.jokers.update();
     }
 }
 impl InputHandler for Demo {
     fn handle_input(&self, mouse: &MouseCompound, tx: &mut Writer) {
+        if let DemoState::HandInProgress = self.state { return };
+
         self.hand.handle_input(mouse, tx);
         self.jokers.handle_input(mouse, tx);
 
@@ -126,8 +148,16 @@ impl MessageHandler for Demo {
             match rx.read() {
                 Some(Message::PlayHand) => {
                     self.state = DemoState::HandInProgress;
+                    self.rem_hands -= 1;
+
+                    self.hand.selected = heapless::Vec::new();
                 },
-                Some(Message::DiscardHand) => self.hand.fill(&mut self.deck, &mut self.rng),
+                Some(Message::DiscardHand) if self.rem_discards > 0 => {
+                    self.rem_discards -= 1;
+                    self.hand.cards.retain(|card| !self.hand.selected.contains(&card.id()));
+                    self.hand.selected = heapless::Vec::new();
+                    self.hand.fill(&mut self.deck, &mut self.rng);
+                },
                 _ => (),
             }
         }
@@ -136,8 +166,7 @@ impl MessageHandler for Demo {
 impl Render for Demo {
     fn render(&self, fb: &wasm4::draw::Framebuffer) {
         fb.line([0, 115], [160, 115], DrawIndex::Second);
-        // card back cover
-        // fb.rect([140, 65], [40, 30], DrawIndex::First, DrawIndex::Fourth);
+        fb.line([0, 67], [160, 67], DrawIndex::Second);
 
         fb.rect([0, 0], [160, 11], DrawIndex::Third, DrawIndex::Second);
         fb.text(format_no_std::show(
@@ -151,13 +180,132 @@ impl Render for Demo {
             format_args!("Target: {}", self.target),
         ).unwrap(), [2, 13], DrawIndex::Fourth, DrawIndex::Transparent);
 
-        fb.line([0, 160 - 115 + 22], [160, 160 - 115 + 22], DrawIndex::Second);
-
-        self.deck_button.render(fb);
         self.play_button.render(fb);
-        self.discard_button.render(fb);
+        fb.rect([125, 78], [35, 11], DrawIndex::Third, DrawIndex::Second);
+        fb.text(format_no_std::show(
+            unsafe { FORMAT_BUF.assume_init_mut() },
+            format_args!("{}/{}", self.rem_hands, self.max_hands),
+        ).unwrap(), [127, 80], DrawIndex::Fourth, DrawIndex::Transparent);
 
-        self.hand.render(fb);
+        self.discard_button.render(fb);
+        fb.rect([0, 78], [59, 11], DrawIndex::Second, DrawIndex::Third);
+        fb.text(format_no_std::show(
+            unsafe { FORMAT_BUF.assume_init_mut() },
+            format_args!("{}/{}", self.rem_discards, self.max_discards),
+        ).unwrap(), [2, 80], DrawIndex::Fourth, DrawIndex::Transparent);
+        
+        self.deck_button.render(fb);
+
+        self.hand.cards
+            .iter()
+            .for_each(|card| card.render(fb));
         self.jokers.render(fb);
+    }
+}
+
+pub struct HandState {
+    size: usize,
+    cards: heapless::Vec<CardState, 10>,
+    selected: heapless::Vec<usize, 5>,
+}
+impl MessageHandler for HandState {
+    fn handle_message(&mut self, rx: &Reader) {
+        self.cards
+            .iter_mut()
+            .for_each(|card| card.handle_message(rx));
+
+        match rx.read() {
+            Some(Message::CardClicked(hand_idx)) if hand_idx < 100 => {
+                if let Some(pos) = self.selected.iter().position(|&e| e == hand_idx) {
+                    self.selected.remove(pos);
+                } else {
+                    self.selected.push(hand_idx).ok();
+                }
+                tracef!("Total selected: {:?}", self.selected);
+            },
+            Some(Message::PlayHand) => {
+                self.selected
+                    .iter()
+                    .enumerate()
+                    .for_each(|(i, idx)| {
+                        // tracef!("Setting animation for card pos: {}", idx);
+                        let card = &mut self.cards[*idx];
+                        let old_origin = card.origin();
+                        card.set_origin([15 * 5 / self.selected.len() as i32 + i as i32 * 32 * 5 / self.selected.len() as i32, 90]);
+                        card.set_animation(AnimationState::new(&[
+                            Translate::new([
+                                (old_origin[0] - card.origin()[0]) as f64,
+                                (old_origin[1] - card.origin()[1]) as f64,
+                            ],
+                            [0.0, 0.0]).into()],
+                            Duration::from_frames(i as u32 * 5),
+                            None,
+                        ));
+                    });
+            },
+            _ => (),
+        }
+    }
+}
+impl InputHandler for HandState {
+    fn handle_input(&self, m: &MouseCompound, tx: &mut crate::message::Writer) {
+        self.cards
+            .iter()
+            .rev()
+            .for_each(|card| card.handle_input(m, tx));
+    }
+}
+impl HandState {
+    pub fn fill(&mut self, deck: &mut Deck, animation_rng: &mut SmallRng) {
+        self.cards
+            .iter_mut()
+            .enumerate()
+            .for_each(|(i, card)| {
+                let old_origin = card.origin();
+                card.set_origin([20 + i as i32 * self.size as i32 * 130 / 60, 140]);
+                card.set_animation(AnimationState::new(
+                    &[Translate::new([
+                         (old_origin[0] - card.origin()[0]) as f64,
+                         (old_origin[1] - card.origin()[1]) as f64,
+                    ], [0.0, 0.0]).into()],
+                    Duration::from_secs(0.2),
+                    Some(random_idle(animation_rng)),
+                ));
+                card.set_id(i);
+            }); 
+        while self.cards.len() != self.size {
+            match deck.draw() {
+                Some(card) => {
+                    let pos = self.cards.len();
+                    let origin = [20 + pos as i32 * self.size as i32 * 130 / 60, 140];
+                    self.cards.push(CardState::new(
+                        pos,
+                        CardData::Playing(card),
+                        origin,
+                        Some(AnimationState::new(
+                            &[
+                                Rotate::new(90.0, 0.0).into(),
+                                Translate::new(
+                                    [160.0 - origin[0] as f64, 80.0 - origin[1] as f64],
+                                    [0.0, 0.0],
+                                ).into(),
+                            ],
+                            Duration::from_frames(animation_rng.next_u32() % 10 + 10),
+                            Some(random_idle(animation_rng)),
+                        )),
+                    )).unwrap();
+                }
+                None => break,
+            }
+        }
+    }
+}
+impl Default for HandState {
+    fn default() -> Self {
+        Self {
+            size: 8,
+            cards: heapless::Vec::new(),
+            selected: heapless::Vec::new(),
+        }
     }
 }
