@@ -4,10 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [profile.release]
-opt-level = "s"
+opt-level = "z"
 lto = true
 strip = true
 codegen-units = 1
+debug = false
 panic = "abort"
 
 [dependencies]
@@ -19,5 +20,6 @@ derive-new = { version = "0.7.0", default-features = false }
 derive_more = { version = "1.0.0", default-features = false, features = ["from", "into"] }
 heapless = { version = "0.8.0", default-features = false }
 rand = { version = "0.8.5", default-features = false, features = ["small_rng"] }
+smart-default = "0.7.1"
 strum = { version = "0.26.3", features = ["derive"], default-features = false }
 wasm4 = { git = "https://github.com/FabricatorZayac/wasm4-rs", branch = "dev", features = ["tracef"] }

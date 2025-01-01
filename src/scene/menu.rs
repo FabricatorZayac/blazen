@@ -2,10 +2,10 @@ use core::mem::MaybeUninit;
 
 use crate::{
     button::Button,
-    card::{state::CardState, Card, Rank, Suit},
+    card::{state::{CardData, CardState}, Card, Rank, Suit},
     gfx::Render,
-    message::Message,
-    MouseSemaphore,
+    message::{InputHandler, Message, MessageHandler, Reader, Writer},
+    MouseCompound,
 };
 
 use super::Scene;
@@ -25,7 +25,7 @@ impl Menu {
         Self {
             ace: CardState::new(
                 0,
-                Card::new(Suit::Spade, Rank::Ace),
+                CardData::Playing(Card::new(Suit::Spade, Rank::Ace)),
                 [80, 60],
                 None,
             ),
@@ -44,18 +44,25 @@ impl Menu {
         }
     }
 }
+impl MessageHandler for Menu {
+    fn handle_message(&mut self, rx: &Reader) {
+        self.ace.handle_message(rx);
+    }
+}
+impl InputHandler for Menu {
+    fn handle_input(&self, mouse: &MouseCompound, tx: &mut Writer) {
+        self.ace.handle_input(mouse, tx);
+        self.start.handle_input(mouse, tx);
+    }
+}
 impl Scene for Menu {
-    fn update(&mut self, m: &MouseSemaphore) {
-        // FIXME: I don't know why this crashes
-        // self.ace.handle_input(m);
+    fn update(&mut self) {
         self.ace.update();
-
-        self.start.update(m);
     }
 }
 impl Render for Menu {
     fn render(&self, fb: &wasm4::draw::Framebuffer) {
-        self.start.render(fb);
         self.ace.render(fb);
+        self.start.render(fb);
     }
 }

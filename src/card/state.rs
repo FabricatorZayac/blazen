@@ -1,18 +1,36 @@
 use constgebra::CMatrix;
 use wasm4::control::MouseState;
 
-use crate::message::{Message, MESSAGE_BUF};
-use crate::MouseSemaphore;
+use crate::animator::transform::Scale;
+use crate::gfx::texture::Texture;
+use crate::message::{InputHandler, Message, MessageHandler, Writer};
+use crate::util::Duration;
+use crate::util::MouseCompound;
 use crate::animator::animation_state::AnimationState;
 use crate::gfx::{Render, Triangle, TriangleFill, Vectorize};
 
-use super::animations::{hover_anim, idle1};
+use super::animations::idle1;
 use super::card::Card;
+use super::joker::Joker;
+
+#[derive(Debug)]
+pub enum CardData {
+    Playing(Card),
+    Joker(Joker),
+}
+impl CardData {
+    pub fn texture(&self) -> [Texture; 2] {
+        match self {
+            CardData::Playing(card) => card.texture(),
+            CardData::Joker(joker) => joker.texture(),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct CardState {
     id: usize,
-    card: Card,
+    card: CardData,
     origin: [i32; 2],
     diff_vecs: [[f64; 2]; 4],
 
@@ -20,7 +38,7 @@ pub struct CardState {
 }
 
 impl CardState {
-    pub fn new(id: usize, card: Card, origin: [i32; 2], animation: Option<AnimationState>) -> Self {
+    pub fn new(id: usize, card: CardData, origin: [i32; 2], animation: Option<AnimationState>) -> Self {
         Self {
             id,
             card,
@@ -46,12 +64,24 @@ impl CardState {
             .map(|vec| vec.mul(matrix))
             .map(Vectorize::devectorize)
     }
-    fn is_hovered(&self, mouse: &MouseState) -> bool {
-        let left   = (mouse.x as i32) > self.origin[0] - 16;
-        let right  = (mouse.x as i32) < self.origin[0] + 16;
-        let bottom = (mouse.y as i32) > self.origin[1] - 21;
-        let top    = (mouse.y as i32) < self.origin[1] + 21;
+    pub fn is_hovered(&self, mouse: MouseState) -> bool {
+        let left   = (mouse.x as i32) > self.origin[0] - 15;
+        let right  = (mouse.x as i32) < self.origin[0] + 15;
+        let bottom = (mouse.y as i32) > self.origin[1] - 20;
+        let top    = (mouse.y as i32) < self.origin[1] + 20;
         left && right && bottom && top
+    }
+
+    pub fn origin(&self) -> [i32; 2] {
+        self.origin
+    }
+
+    pub fn set_origin(&mut self, origin: [i32; 2]) {
+        self.origin = origin;
+    }
+
+    pub fn id(&self) -> usize {
+        self.id
     }
 }
 
@@ -76,19 +106,39 @@ impl CardState {
             self.set_animation(anim);
         }
     }
-    pub fn handle_input(&mut self, mouse: &MouseSemaphore) {
-        if let Some(m) = mouse.state() {
-            if self.is_hovered(&m) {
-                mouse.lock();
-                self.set_animation(hover_anim());
+}
 
-                if m.buttons.left
-                && !mouse.prev.as_ref().unwrap().buttons.left {
-                    unsafe {
-                        MESSAGE_BUF = Some(Message::CardClicked(self.id));
-                    }
+impl InputHandler for CardState {
+    fn handle_input(&self, mouse: &MouseCompound, tx: &mut Writer) {
+        let m = mouse.state();
+
+        if self.is_hovered(m) {
+            if m.buttons.left && !mouse.prev().buttons.left {
+                tx.write(Message::CardClicked(self.id)).ok();
+            }
+            tx.write(Message::CardHovered(self.id)).ok();
+        }
+    }
+}
+
+impl MessageHandler for CardState {
+    fn handle_message(&mut self, rx: &crate::message::Reader) {
+        match rx.read() {
+            Some(Message::CardHovered(id)) if id == self.id => {
+                match &self.card {
+                    CardData::Playing(_) => self.set_animation(AnimationState::new(
+                        &[Scale::new([1.3, 1.3], [1.0, 1.0]).into()],
+                        Duration::from_secs(0.1),
+                        Some(idle1),
+                    )),
+                    CardData::Joker(_) => self.set_animation(AnimationState::new(
+                        &[Scale::new([2.0, 2.0], [1.0, 1.0]).into()],
+                        Duration::from_secs(0.1),
+                        Some(idle1),
+                    )),
                 }
             }
+            _ => (),
         }
     }
 }

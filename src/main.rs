@@ -2,9 +2,8 @@
 #![no_main]
 
 #![allow(internal_features, static_mut_refs)]
-#![feature(core_intrinsics, coerce_unsized, debug_closure_helpers)]
+#![feature(core_intrinsics, debug_closure_helpers)]
 
-use core::{arch::wasm32::unreachable, cell::Cell, mem::MaybeUninit, panic::PanicInfo};
 #[panic_handler]
 fn panic_handler(_: &PanicInfo) -> ! {
     unreachable()
@@ -18,97 +17,41 @@ mod util;
 mod scene;
 mod message;
 
+use core::{arch::wasm32::unreachable, mem::MaybeUninit, panic::PanicInfo};
 use card::state::CardState;
-use gfx::texture::{TextureBuffer, TEXTURE_BUFFER};
-use message::Message;
-use scene::{DeckScene, Demo, Menu, Scene, ScenePtr as _, DEMO};
-use wasm4::{
-    self as w4, control::{Mouse, MouseState}, draw::{Color, Framebuffer}, tracef
-};
-
-static mut FRAME_COUNT: u32 = 0;
-struct FrameCounter;
-impl FrameCounter {
-    fn get() -> u32 {
-        unsafe { FRAME_COUNT }
-    }
-    fn increment() {
-        unsafe { FRAME_COUNT += 1 };
-    }
-}
-
-static mut ENTROPY: [u8; 16] = [0; 16];
-struct Entropy;
-impl Entropy {
-    fn get() -> [u8; 16] {
-        unsafe { ENTROPY }
-    }
-    fn update(m: &MouseState) {
-        unsafe {
-            ENTROPY[(FrameCounter::get() % 16) as usize] = (m.x * 10 + m.y) as u8;
-        }
-    }
-}
-
-struct MouseSemaphore {
-    mouse: Mouse,
-    prev: Option<MouseState>,
-    lock: Cell<bool>,
-}
-impl MouseSemaphore {
-    pub fn new(mouse: Mouse) -> Self {
-        MouseSemaphore { mouse, prev: None, lock: Cell::new(false) }
-    }
-    pub fn state(&self) -> Option<MouseState> {
-        if self.lock.get() {
-            None
-        } else {
-            Some(self.mouse.state())
-        }
-    }
-    pub fn lock(&self) {
-        self.lock.replace(true);
-    }
-    pub fn update(&mut self) {
-        self.unlock(); 
-        self.prev = self.state();
-    }
-
-    fn unlock(&mut self) {
-        self.lock.replace(false);
-    }
-}
+use message::{Message, MessageBuffer, MessageHandler, Reader};
+use scene::{Demo, Menu, Scene, ScenePtr, DEMO};
+use util::{Entropy, FrameCounter, MouseCompound};
+use wasm4::{self as w4, control::{Mouse, MouseState}, draw::{Color, Framebuffer}, tracef};
 
 struct Blazen {
     fb: Framebuffer,
 
-    mouse: MouseSemaphore,
+    prev_mouse: MouseState,
+    mouse: Mouse,
 
     scene: &'static mut dyn Scene,
 }
 
-static mut LOG_BUF: MaybeUninit<[u8; 200]> = MaybeUninit::uninit();
+static mut FORMAT_BUF: MaybeUninit<[u8; 200]> = MaybeUninit::uninit();
 impl w4::rt::Runtime for Blazen {
     fn start(res: w4::rt::Resources) -> Self {
-        res.logger.init(unsafe {LOG_BUF.assume_init_mut()});
+        res.logger.init(unsafe {FORMAT_BUF.assume_init_mut()});
 
         Menu::init();
 
         tracef!("Hello {}!", "logger");
         tracef!("__heap_base: {:?}", &raw const __heap_base);
         tracef!("sizeof CardState: {}", size_of::<CardState>());
-        tracef!("sizeof DeckScene: {}", size_of::<DeckScene>());
-
-        tracef!("sizeof TextureBuffer: {}", size_of::<TextureBuffer>());
-        tracef!("TEXTURE_BUFFER: {:?}", TEXTURE_BUFFER);
 
         tracef!("sizeof Demo: {}", size_of::<Demo>());
         tracef!("DEMO: {:?}", DEMO);
 
-
         Blazen {
             fb: res.framebuffer,
-            mouse: MouseSemaphore::new(res.controls.mouse),
+
+            prev_mouse: res.controls.mouse.state(),
+            mouse: res.controls.mouse,
 
             scene: Menu::get(),
         }
@@ -120,30 +63,42 @@ impl w4::rt::Runtime for Blazen {
             Color(0xab4646),
             Color(0xf0f0f0),
         ]);
-        self.scene.update(&self.mouse);
+        let mut msg = MessageBuffer::new();
+        let (mut tx, rx) = msg.get_channel();
+
+        let m = MouseCompound::new(&self.mouse, self.prev_mouse);
+
+        self.scene.handle_input(&m, &mut tx);
+
+        self.handle_message(&rx);
+        self.scene.handle_message(&rx);
+
+        self.scene.update();
+
         self.scene.render(&self.fb);
-        match unsafe { message::MESSAGE_BUF } {
+
+        // cleanup
+        self.prev_mouse = self.mouse.state();
+        Entropy::update(&self.mouse.state());
+        FrameCounter::increment();
+    }
+}
+
+impl MessageHandler for Blazen {
+    fn handle_message(&mut self, rx: &Reader) {
+        match rx.read() {
             Some(Message::Start) => {
                 DEMO.init();
-                self.scene = unsafe {DEMO.as_mut()}.unwrap();
+                self.scene = DEMO.get();
             }
-            Some(Message::DeckClicked) => {
-                self.scene = unsafe {DEMO.as_ref()}.unwrap().get_deck().into();
-            },
+            // Some(Message::DeckClicked) => {
+            //     self.scene = unsafe {DEMO.as_ref()}.unwrap().get_deck().into();
+            // },
             Some(Message::BackToGame) => {
                 self.scene = unsafe {DEMO.as_mut()}.unwrap();
             },
             _ => (),
         }
-
-        // cleanup
-        if let Some(msg) = unsafe { message::MESSAGE_BUF } {
-            tracef!("{:?}", msg)
-        }
-        unsafe { message::MESSAGE_BUF = None };
-        self.mouse.update();
-        Entropy::update(&self.mouse.state().unwrap());
-        FrameCounter::increment();
     }
 }
 

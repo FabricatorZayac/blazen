@@ -1,6 +1,6 @@
 use bitvec::{order::Msb0, view::AsBits};
 use constgebra::CVector;
-use texture::{Texture, TextureColors, TEXTURE_BUFFER, TEXTURE_HEIGHT, TEXTURE_WIDTH};
+use texture::{Texture, TextureColors, TEXTURE_HEIGHT, TEXTURE_WIDTH};
 use wasm4::draw::{DrawIndex, Framebuffer};
 
 pub mod texture;
@@ -54,14 +54,14 @@ impl Render for Triangle {
                             let tx = (uv[0] * TEXTURE_WIDTH as f64 / bary.det()) as usize;
                             let ty = (uv[1] * TEXTURE_HEIGHT as f64 / bary.det()) as usize;
 
-                            let tx = if tx > TEXTURE_WIDTH {
-                                TEXTURE_WIDTH
+                            let tx = if tx >= TEXTURE_WIDTH {
+                                TEXTURE_WIDTH - 1
                             } else {
                                 tx
                             };
 
-                            let ty = if ty > TEXTURE_HEIGHT {
-                                TEXTURE_HEIGHT
+                            let ty = if ty >= TEXTURE_HEIGHT {
+                                TEXTURE_HEIGHT - 1
                             } else {
                                 ty
                             };
@@ -69,7 +69,7 @@ impl Render for Triangle {
                             match texture.colors {
                                 TextureColors::OneBpp(idxs) => {
                                     // might replace with picking out the byte + bit offset
-                                    let buf = unsafe {TEXTURE_BUFFER.as_ref().unwrap()}.get();
+                                    let buf = &texture.buf[..600];
                                     let bits = buf.as_bits::<Msb0>();
                                     pixel(
                                         x,
@@ -78,8 +78,18 @@ impl Render for Triangle {
                                         fb,
                                     );
                                 }
-                                TextureColors::TwoBpp(_) => {
-                                    unimplemented!()
+                                TextureColors::TwoBpp(idxs) => {
+                                    let buf = texture.buf;
+                                    let bits = buf.as_bits::<Msb0>();
+
+                                    // This is lowkey scuffed
+                                    let pos = (tx + ty * TEXTURE_WIDTH) * 2;
+                                    pixel(
+                                        x,
+                                        y,
+                                        idxs[bits[pos] as usize + bits[pos+1] as usize * 2],
+                                        fb,
+                                    );
                                 }
                             }
                         }

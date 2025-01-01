@@ -102,19 +102,3 @@ impl Transform for Transformation {
         }
     }
 }
-
-/*
-// Combine transformations in a fixed array
-    let transformations = [
-        TransformationType::Rotate(rotate),
-        TransformationType::Translate(translate),
-        TransformationType::Scale(scale),
-    ];
-
-    // Create a transformation chain
-    let chain = TransformationChain::new(&transformations);
-
-    // Apply the entire chain
-    let progress = 0.3;
-    let result = chain.apply(progress);
- */

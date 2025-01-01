@@ -1,4 +1,4 @@
-use crate::message::{Message, MESSAGE_BUF};
+use crate::message::{Message, MessageHandler, Reader, Writer};
 use crate::gfx::Render;
 use crate::card::{deck::Deck, state::CardState, Suit};
 
@@ -17,15 +17,17 @@ impl DeckScene {
 }
 
 impl Scene for DeckScene {
-    fn update(&mut self, mouse: &crate::MouseSemaphore) {
+    fn update(&mut self, mouse: &crate::MouseSemaphore, tx: &mut Writer, _rx: &Reader) {
         if let Some(m) = mouse.state() {
-            if m.buttons.left && !mouse.prev.as_ref().unwrap().buttons.left {
-                unsafe {
-                    MESSAGE_BUF = Some(Message::BackToGame)
-                }
+            if m.buttons.left && !mouse.prev().buttons.left {
+                tx.write(Message::BackToGame).ok();
             }
         }
     }
+}
+
+impl MessageHandler for DeckScene {
+    fn handle_message(&mut self, _rx: &Reader) { }
 }
 
 impl Render for DeckScene {

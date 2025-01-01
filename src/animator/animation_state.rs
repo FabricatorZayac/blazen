@@ -1,5 +1,3 @@
-// use core::intrinsics::{cosf64, sinf64};
-
 use constgebra::CMatrix;
 
 use crate::{util::Duration, FrameCounter};

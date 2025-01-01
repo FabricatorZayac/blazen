@@ -7,7 +7,8 @@ pub const TEXTURE_HEIGHT: usize = 80;
 
 #[derive(Clone, Copy)]
 pub struct Texture {
-    pub uv: [[f64; 2]; 3],
+    pub buf: &'static [u8],
+    pub uv: UV,
     pub colors: TextureColors,
 }
 
@@ -17,13 +18,8 @@ pub enum TextureColors {
     TwoBpp([DrawIndex; 4]),
 }
 
-pub const TEXTURE_BUFFER: *mut TextureBuffer = &raw mut __heap_base as *mut TextureBuffer;
-pub struct TextureBuffer([u8; 1200]);
-impl TextureBuffer {
-    pub fn get_mut(&mut self) -> &mut [u8] {
-        self.0.as_mut()
-    }
-    pub fn get(&self) -> &[u8] {
-        self.0.as_ref()
-    }
-}
+type UV = [[f64; 2]; 3];
+pub const CARD_UV0: UV = [ [0.0, 0.0], [1.0, 0.0], [0.0, 1.0] ];
+pub const CARD_UV1: UV = [ [1.0, 0.0], [1.0, 1.0], [0.0, 1.0] ];
+
+pub const TEXTURE_BUFFER: *mut [u8; 1200] = &raw mut __heap_base as *mut [u8; 1200];

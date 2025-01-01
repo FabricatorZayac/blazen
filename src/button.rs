@@ -1,8 +1,8 @@
-use core::fmt::{Debug, Write};
+use core::fmt::Debug;
 
-use wasm4::{draw::{DrawIndex, Framebuffer}, tracef};
+use wasm4::draw::{DrawIndex, Framebuffer};
 
-use crate::{gfx::Render, message::{Message, MESSAGE_BUF}, MouseSemaphore};
+use crate::{gfx::Render, message::{InputHandler, Message, Writer}, MouseCompound};
 
 #[derive(derive_new::new)]
 pub struct Button {
@@ -45,27 +45,24 @@ impl Render for Button {
         );
     }
 }
-impl Button {
-    pub fn update(&mut self, mouse: &MouseSemaphore) {
-        let m = mouse.state().unwrap();
 
-        if !m.buttons.left {
-            return;
-        }
-        if let Some(state) = &mouse.prev {
-            if state.buttons.left {
-                return;
-            }
-        }
+impl InputHandler for Button {
+    fn handle_input(&self, mouse: &MouseCompound, tx: &mut Writer) {
+        let m = mouse.state();
+
+        if !m.buttons.left || mouse.prev().buttons.left { return };
 
         let left = m.x as i32 > self.start[0];
         let right = (m.x as u32) < self.get_shape()[0] + self.start[0] as u32;
         let bottom = m.y as i32 > self.start[1];
         let top = (m.y as u32) < self.get_shape()[1] + self.start[1] as u32;
         if left && right && top && bottom {
-            unsafe { MESSAGE_BUF = Some(self.onclick) }
+            tx.write(self.onclick).ok();
         }
     }
+}
+
+impl Button {
     fn get_shape(&self) -> [u32; 2] {
         [(self.text.len() * 8 + 3) as u32, 11]
     }

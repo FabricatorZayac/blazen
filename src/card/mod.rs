@@ -1,7 +1,7 @@
 pub mod deck;
-// pub mod view;
 pub mod state;
 pub mod animations;
+pub mod joker;
 
 mod card;
 pub use card::*;
