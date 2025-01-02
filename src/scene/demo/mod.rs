@@ -10,7 +10,6 @@ use crate::message::{InputHandler, Message, MessageHandler, Reader, Writer};
 use crate::gfx::{texture::TEXTURE_BUFFER, Render};
 use super::{Scene, ScenePtr};
 
-// mod hand_state;
 mod jokers;
 
 pub const DEMO: *mut Demo = TEXTURE_BUFFER.wrapping_add(1) as *mut Demo;
@@ -152,7 +151,7 @@ impl MessageHandler for Demo {
 
                     self.hand.selected = heapless::Vec::new();
                 },
-                Some(Message::DiscardHand) if self.rem_discards > 0 => {
+                Some(Message::DiscardHand) if self.rem_discards > 0 && self.hand.selected.len() > 0 => {
                     self.rem_discards -= 1;
                     self.hand.cards.retain(|card| !self.hand.selected.contains(&card.id()));
                     self.hand.selected = heapless::Vec::new();
