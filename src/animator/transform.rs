@@ -1,4 +1,4 @@
-use core::{fmt::Debug, intrinsics::{cosf64, sinf64}};
+use core::{f64::{self, consts::PI}, fmt::Debug};
 use constgebra::CMatrix;
 use derive_more::derive::From;
 use derive_new::new;
@@ -43,11 +43,11 @@ fn lerp(start: f64, end: f64, progress: f64) -> f64 {
 impl Transform for Rotate {
     fn apply(&self, progress: f64) -> CMatrix<3, 3> {
         let angle = lerp(self.start_angle, self.end_angle, progress).to_radians();
-        CMatrix::new(unsafe { [
-            [ cosf64(angle), sinf64(angle), 0.0],
-            [-sinf64(angle), cosf64(angle), 0.0],
-            [           0.0,           0.0, 1.0],
-        ] })
+        CMatrix::new([
+             [ cos(angle), sin(angle), 0.0],
+             [-sin(angle), cos(angle), 0.0],
+             [        0.0,        0.0, 1.0],
+        ])
     }
 }
 impl Transform for Translate {
@@ -101,4 +101,16 @@ impl Transform for Transformation {
             Transformation::Shear(shear) => shear.apply(progress),
         }
     }
+}
+
+fn sin(x: f64) -> f64 {
+    const B: f64 = 4.0 / PI;
+    const C: f64 = -4.0 / (PI * PI);
+    let y = B * x + C * x * x.abs();
+
+    y
+}
+
+fn cos(x: f64) -> f64 {
+    sin(x + PI / 2.0)
 }

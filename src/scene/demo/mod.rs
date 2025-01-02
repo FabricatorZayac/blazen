@@ -45,8 +45,8 @@ pub struct Demo {
     play_button: Button,
     discard_button: Button,
 
-    target: f32,
-    score: f32,
+    target: u32,
+    score: u32,
 
     max_hands: u8,
     rem_hands: u8,
@@ -83,8 +83,8 @@ impl Demo {
                 Message::DiscardHand,
             ),
 
-            target: 400.0,
-            score: 0.0,
+            target: 400,
+            score: 0,
 
             jokers: Default::default(),
             hand: Default::default(),

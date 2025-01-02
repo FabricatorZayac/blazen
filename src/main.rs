@@ -1,8 +1,8 @@
 #![no_std]
 #![no_main]
 
-#![allow(internal_features, static_mut_refs)]
-#![feature(core_intrinsics, debug_closure_helpers)]
+#![allow(static_mut_refs)]
+#![feature(debug_closure_helpers)]
 
 #[panic_handler]
 fn panic_handler(_: &PanicInfo) -> ! {
