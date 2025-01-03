@@ -1,23 +1,25 @@
+use core::ops::Add as _;
+
 use bitvec::{order::Msb0, view::AsBits};
-use constgebra::CVector;
 use texture::{Texture, TextureColors, TEXTURE_HEIGHT, TEXTURE_WIDTH};
 use wasm4::draw::{DrawIndex, Framebuffer};
+
+use crate::linalg::vector::Vec3;
 
 pub mod texture;
 
 pub trait Vectorize {
-    fn vectorize(self) -> CVector<3>;
-    fn devectorize(vector: CVector<3>) -> Self;
+    fn vectorize(self) -> Vec3;
+    fn devectorize(vector: Vec3) -> Self;
 }
 
-impl Vectorize for [f64; 2] {
-    fn vectorize(self) -> CVector<3> {
-        CVector::new([[self[0], self[1], 1.0]])
+impl Vectorize for [f32; 2] {
+    fn vectorize(self) -> Vec3 {
+        [self[0], self[1], 1.0].into()
     }
 
-    fn devectorize(vector: CVector<3>) -> Self {
-        let a = vector.finish()[0];
-        [a[0], a[1]]
+    fn devectorize(vector: Vec3) -> Self {
+        [vector[0], vector[1]]
     }
 }
 
@@ -50,9 +52,9 @@ impl Render for Triangle {
                             #[rustfmt::skip]
                             let uv = uv0.map(|a| a * bary.alpha()).vectorize().add(
                                      uv1.map(|a| a * bary.beta()).vectorize()).add(
-                                     uv2.map(|a| a * bary.gamma()).vectorize()).finish()[0];
-                            let tx = (uv[0] * TEXTURE_WIDTH as f64 / bary.det()) as usize;
-                            let ty = (uv[1] * TEXTURE_HEIGHT as f64 / bary.det()) as usize;
+                                     uv2.map(|a| a * bary.gamma()).vectorize());
+                            let tx = (uv[0] * TEXTURE_WIDTH as f32 / bary.det()) as usize;
+                            let ty = (uv[1] * TEXTURE_HEIGHT as f32 / bary.det()) as usize;
 
                             let tx = if tx >= TEXTURE_WIDTH {
                                 TEXTURE_WIDTH - 1
@@ -151,17 +153,17 @@ struct Barycentric2D {
 }
 
 impl Barycentric2D {
-    pub fn alpha(&self) -> f64 {
-        self.u1 as f64
+    pub fn alpha(&self) -> f32 {
+        self.u1 as f32
     }
-    pub fn beta(&self) -> f64 {
-        self.u2 as f64
+    pub fn beta(&self) -> f32 {
+        self.u2 as f32
     }
-    pub fn gamma(&self) -> f64 {
-        (self.det - self.u1 - self.u2) as f64
+    pub fn gamma(&self) -> f32 {
+        (self.det - self.u1 - self.u2) as f32
     }
-    pub fn det(&self) -> f64 {
-        self.det as f64
+    pub fn det(&self) -> f32 {
+        self.det as f32
     }
 }
 

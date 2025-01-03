@@ -15,7 +15,6 @@ panic = "abort"
 bit_reverse = { version = "0.1.8", default-features = false }
 bitvec = { version = "1.0.1", default-features = false }
 buddy-alloc = "0.6.0"
-constgebra = "0.1.4"
 derive-new = { version = "0.7.0", default-features = false }
 derive_more = { version = "1.0.0", default-features = false, features = ["from", "into"] }
 heapless = { version = "0.8.0", default-features = false }

@@ -1,10 +1,11 @@
-use core::{f64::{self, consts::PI}, fmt::Debug};
-use constgebra::CMatrix;
+use core::{f32::consts::PI, fmt::Debug, ops::{Add, Mul, Sub}};
 use derive_more::derive::From;
 use derive_new::new;
 
+use crate::linalg::matrix::Mat3;
+
 pub trait Transform: Debug {
-    fn apply(&self, progress: f64) -> CMatrix<3, 3>;
+    fn apply(&self, progress: f32) -> Mat3;
 }
 
 #[derive(Debug, From, Clone, Copy)]
@@ -17,82 +18,76 @@ pub enum Transformation {
 
 #[derive(Debug, new, Clone, Copy)]
 pub struct Rotate {
-    start_angle: f64,
-    end_angle: f64,
+    start_angle: f32,
+    end_angle: f32,
 }
 #[derive(Debug, new, Clone, Copy)]
 pub struct Translate {
-    start: [f64; 2],
-    end: [f64; 2],
+    start: [f32; 2],
+    end: [f32; 2],
 }
 #[derive(Debug, new, Clone, Copy)]
 pub struct Scale {
-    start: [f64; 2],
-    end: [f64; 2],
+    start: [f32; 2],
+    end: [f32; 2],
 }
 #[derive(Debug, new, Clone, Copy)]
 pub struct Shear {
-    start: [f64; 2],
-    end: [f64; 2],
+    start: [f32; 2],
+    end: [f32; 2],
 }
 
-fn lerp(start: f64, end: f64, progress: f64) -> f64 {
+fn lerp<T>(start: T, end: T, progress: T) -> T
+    where T: Add<Output = T> + Sub<Output = T> + Mul<Output = T> + Copy
+{
     start + (end - start) * progress
 }
 
 impl Transform for Rotate {
-    fn apply(&self, progress: f64) -> CMatrix<3, 3> {
-        let angle = lerp(self.start_angle, self.end_angle, progress).to_radians();
-        CMatrix::new([
-             [ cos(angle), sin(angle), 0.0],
-             [-sin(angle), cos(angle), 0.0],
-             [        0.0,        0.0, 1.0],
-        ])
+    fn apply(&self, progress: f32) -> Mat3 {
+        let angle = lerp(self.start_angle, self.end_angle, progress as f32).to_radians();
+        [[cos(angle), -sin(angle), 0.0],
+         [sin(angle),  cos(angle), 0.0],
+         [       0.0,         0.0, 1.0]].into()
     }
 }
 impl Transform for Translate {
-    fn apply(&self, progress: f64) -> CMatrix<3, 3> {
+    fn apply(&self, progress: f32) -> Mat3 {
         let x = lerp(self.start[0], self.end[0], progress);
         let y = lerp(self.start[1], self.end[1], progress);
-        CMatrix::new([
-            [ 1.0, 0.0, 0.0],
-            [ 0.0, 1.0, 0.0],
-            [   x,   y, 1.0],
-        ])
+        [[ 1.0, 0.0,   x],
+         [ 0.0, 1.0,   y],
+         [ 0.0, 0.0, 1.0]].into()
     }
 }
 impl Transform for Scale {
-    fn apply(&self, progress: f64) -> CMatrix<3, 3> {
+    fn apply(&self, progress: f32) -> Mat3 {
         let x = lerp(self.start[0], self.end[0], progress);
         let y = lerp(self.start[1], self.end[1], progress);
-        CMatrix::new([
-            [ x,   0.0, 0.0],
-            [ 0.0,   y, 0.0],
-            [ 0.0, 0.0, 1.0],
-        ])
+        [[ x,   0.0, 0.0],
+         [ 0.0,   y, 0.0],
+         [ 0.0, 0.0, 1.0]].into()
     }
 }
 // this seems to be broken for now
 impl Transform for Shear {
-    fn apply(&self, progress: f64) -> CMatrix<3, 3> {
+    fn apply(&self, progress: f32) -> Mat3 {
         let x = lerp(self.start[0], self.end[0], progress);
         let y = lerp(self.start[1], self.end[1], progress);
-        CMatrix::new([
-            [ 1.0,   y, 0.0],
-            [   x, 1.0, 0.0],
-            [ 0.0, 0.0, 1.0],
-        ])
+        [[ 1.0,   y, 0.0],
+         [   x, 1.0, 0.0],
+         [ 0.0, 0.0, 1.0]].into()
     }
 }
 
 impl Transform for [Transformation] {
-    fn apply(&self, progress: f64) -> CMatrix<3, 3> {
-        self.iter().fold(CMatrix::identity(), |acc, transform| acc.mul(transform.apply(progress)))
+    fn apply(&self, progress: f32) -> Mat3 {
+        self.iter().fold(Mat3::identity(), |acc, transform| acc.mul(transform.apply(progress)))
     }
 }
 
 impl Transform for Transformation {
-    fn apply(&self, progress: f64) -> CMatrix<3, 3> {
+    fn apply(&self, progress: f32) -> Mat3 {
         match self {
             // this feels like it should be a macro, but whatever
             Transformation::Rotate(rotate) => rotate.apply(progress),
@@ -103,14 +98,14 @@ impl Transform for Transformation {
     }
 }
 
-fn sin(x: f64) -> f64 {
-    const B: f64 = 4.0 / PI;
-    const C: f64 = -4.0 / (PI * PI);
+fn sin(x: f32) -> f32 {
+    const B: f32 = 4.0 / PI;
+    const C: f32 = -4.0 / (PI * PI);
     let y = B * x + C * x * x.abs();
 
     y
 }
 
-fn cos(x: f64) -> f64 {
+fn cos(x: f32) -> f32 {
     sin(x + PI / 2.0)
 }

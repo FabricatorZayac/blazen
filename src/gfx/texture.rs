@@ -18,7 +18,7 @@ pub enum TextureColors {
     TwoBpp([DrawIndex; 4]),
 }
 
-type UV = [[f64; 2]; 3];
+type UV = [[f32; 2]; 3];
 pub const CARD_UV0: UV = [ [0.0, 0.0], [1.0, 0.0], [0.0, 1.0] ];
 pub const CARD_UV1: UV = [ [1.0, 0.0], [1.0, 1.0], [0.0, 1.0] ];
 

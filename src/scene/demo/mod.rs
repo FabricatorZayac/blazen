@@ -233,8 +233,8 @@ impl MessageHandler for HandState {
                         card.set_origin([15 * 5 / self.selected.len() as i32 + i as i32 * 32 * 5 / self.selected.len() as i32, 90]);
                         card.set_animation(AnimationState::new(&[
                             Translate::new([
-                                (old_origin[0] - card.origin()[0]) as f64,
-                                (old_origin[1] - card.origin()[1]) as f64,
+                                (old_origin[0] - card.origin()[0]) as f32,
+                                (old_origin[1] - card.origin()[1]) as f32,
                             ],
                             [0.0, 0.0]).into()],
                             Duration::from_frames(i as u32 * 5),
@@ -264,8 +264,8 @@ impl HandState {
                 card.set_origin([20 + i as i32 * self.size as i32 * 130 / 60, 140]);
                 card.set_animation(AnimationState::new(
                     &[Translate::new([
-                         (old_origin[0] - card.origin()[0]) as f64,
-                         (old_origin[1] - card.origin()[1]) as f64,
+                         (old_origin[0] - card.origin()[0]) as f32,
+                         (old_origin[1] - card.origin()[1]) as f32,
                     ], [0.0, 0.0]).into()],
                     Duration::from_secs(0.2),
                     Some(random_idle(animation_rng)),
@@ -283,11 +283,11 @@ impl HandState {
                         origin,
                         Some(AnimationState::new(
                             &[
-                                Rotate::new(90.0, 0.0).into(),
                                 Translate::new(
-                                    [160.0 - origin[0] as f64, 80.0 - origin[1] as f64],
+                                    [160.0 - origin[0] as f32, 80.0 - origin[1] as f32],
                                     [0.0, 0.0],
                                 ).into(),
+                                Rotate::new(90.0, 0.0).into(),
                             ],
                             Duration::from_frames(animation_rng.next_u32() % 10 + 10),
                             Some(random_idle(animation_rng)),

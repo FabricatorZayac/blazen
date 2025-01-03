@@ -1,8 +1,11 @@
-use constgebra::CMatrix;
+use core::ops::Mul as _;
+
 use wasm4::control::MouseState;
 
 use crate::animator::transform::Scale;
 use crate::gfx::texture::Texture;
+use crate::linalg::matrix::Mat3;
+use crate::linalg::vector::Vec3;
 use crate::message::{InputHandler, Message, MessageHandler, Writer};
 use crate::util::Duration;
 use crate::util::MouseCompound;
@@ -32,7 +35,7 @@ pub struct CardState {
     id: usize,
     card: CardData,
     origin: [i32; 2],
-    diff_vecs: [[f64; 2]; 4],
+    diff_vecs: [[f32; 2]; 4],
 
     animation: Option<AnimationState>,
 }
@@ -52,16 +55,16 @@ impl CardState {
             animation,
         }
     }
-    fn animate(&self) -> CMatrix<3, 3> {
+    fn animate(&self) -> Mat3 {
         self.animation
             .as_ref()
-            .map_or(Some(CMatrix::identity()), AnimationState::update)
-            .unwrap_or(CMatrix::identity())
+            .map_or(Some(Mat3::identity()), AnimationState::update)
+            .unwrap_or(Mat3::identity())
     }
-    fn apply_transform(&self, matrix: CMatrix<3, 3>) -> [[f64; 2]; 4] {
+    fn apply_transform(&self, matrix: Mat3) -> [[f32; 2]; 4] {
         self.diff_vecs
             .map(Vectorize::vectorize)
-            .map(|vec| vec.mul(matrix))
+            .map(|vec: Vec3| vec.mul(&matrix))
             .map(Vectorize::devectorize)
     }
     pub fn is_hovered(&self, mouse: MouseState) -> bool {
@@ -150,13 +153,13 @@ impl MessageHandler for CardState {
 impl Render for CardState {
     fn render(&self, fb: &wasm4::draw::Framebuffer) {
         let transform = self.animate();
-        let origin = self.origin.map(|i| i as f64).vectorize();
+        let origin = self.origin.map(|i| i as f32).vectorize();
         let texture = self.card.texture();
         let vertices = self.apply_transform(transform)
             .map(Vectorize::vectorize)
-            .map(|vertex| vertex.add(origin))
+            .map(|vertex| &vertex + &origin)
             .map(Vectorize::devectorize)
-            .map(|vertex: [f64; 2]| vertex.map(|f| f as i32));
+            .map(|vertex: [f32; 2]| vertex.map(|f| f as i32));
 
         let t1 = Triangle {
             vertices: [vertices[0], vertices[1], vertices[3]],

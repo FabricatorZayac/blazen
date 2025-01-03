@@ -1,6 +1,4 @@
-use constgebra::CMatrix;
-
-use crate::{util::Duration, FrameCounter};
+use crate::{linalg::matrix::Mat3, util::Duration, FrameCounter};
 
 use super::transform::{Transform, Transformation};
 
@@ -25,12 +23,12 @@ impl AnimationState {
             next,
         }
     }
-    pub fn update(&self) -> Option<CMatrix<3, 3>> {
+    pub fn update(&self) -> Option<Mat3> {
         if self.finished() {
             None
         } else {
             let elapsed = Duration::from_frames(self.duration.as_frames() - (self.deadline - FrameCounter::get()));
-            let progress = (elapsed.as_secs() / self.duration.as_secs()).min(1.0) as f64;
+            let progress = (elapsed.as_secs() / self.duration.as_secs()).min(1.0);
 
             Some(self.transformation.apply(progress))
         }

@@ -16,6 +16,7 @@ mod animator;
 mod util;
 mod scene;
 mod message;
+mod linalg;
 
 use core::{arch::wasm32::unreachable, mem::MaybeUninit, panic::PanicInfo};
 use card::state::CardState;
