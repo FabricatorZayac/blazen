@@ -17,7 +17,7 @@ impl<const N: usize> Matrix<N> {
 }
 
 impl<const N: usize> Mul for Matrix<N> {
-    type Output = Matrix<N>;
+    type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
         let mut matrix = Matrix::default();

@@ -1,7 +1,7 @@
 use bit_reverse::ParallelReverse;
 use bitvec::{order::Msb0, slice::BitSlice, view::{AsBits, AsMutBits}};
 use heapless::Vec;
-use strum::EnumIter;
+use strum::{EnumCount, EnumIter};
 use wasm4::draw::DrawIndex;
 
 use crate::gfx::texture::{Texture, TextureColors, TEXTURE_BUFFER, TEXTURE_HEIGHT, TEXTURE_WIDTH};
@@ -14,7 +14,7 @@ pub enum Suit {
     Diamond,
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, EnumIter, Clone, Copy)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone, Copy, EnumIter, EnumCount)]
 pub enum Rank {
     Two,
     Three,
@@ -59,12 +59,24 @@ impl Rank {
 //     Glass,
 // }
 
-#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Card {
     suit: Suit,
     rank: Rank,
     // enhancement: Option<Enhancement>,
 }
+// impl PartialOrd for Card {
+//     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+//         let suit_order = self.suit.cmp(&other.suit);
+//
+//         Some(suit_order)
+//     }
+// }
+// impl Ord for Card {
+//     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+//         self.partial_cmp(other).unwrap()
+//     }
+// }
  
 impl Card {
     pub fn new(suit: Suit, rank: Rank) -> Self {
@@ -74,8 +86,11 @@ impl Card {
             // enhancement: None,
         }
     }
-    pub fn suit(&self) -> Suit {
-        self.suit
+    pub fn value(&self) -> u32 {
+        self.rank.value()
+    }
+    pub fn rank(&self) -> Rank {
+        self.rank
     }
     // pub fn enhance(&mut self, enhancement: Enhancement) {
     //     self.enhancement = Some(enhancement);
@@ -119,7 +134,6 @@ impl Card {
         );
 
         if !self.is_face() && self.rank != Rank::Ace {
-
             let x1 = 15;
             let x2 = 60 - 15 - CARD_FONT_WIDTH;
             let x3 = TEXTURE_WIDTH as usize / 2 - (CARD_FONT_WIDTH / 2);
@@ -209,6 +223,10 @@ impl Card {
             },
         ]
     }
+
+    pub fn suit(&self) -> Suit {
+        self.suit
+    }
 }
 
 fn font_into_buffer(bitbuf: &mut BitSlice<u8, Msb0>, font_idx: usize, draw_idx: usize, flip: bool) {
@@ -216,7 +234,7 @@ fn font_into_buffer(bitbuf: &mut BitSlice<u8, Msb0>, font_idx: usize, draw_idx: 
         return;
     }
 
-    let font = CARD_FONT.map(|byte|{ byte ^ 0xFF }); // little oopsie
+    let font = CARD_FONT.map(|byte| byte ^ 0xFF); // little oopsie
 
     let mut charbuf: CardChar = font[font_idx*CARD_FONT_CHARSIZE..(font_idx + 1)*CARD_FONT_CHARSIZE].as_ref().into();
     if flip {

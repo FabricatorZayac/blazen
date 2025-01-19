@@ -1,10 +1,9 @@
-use wasm4::tracef;
-
-use crate::{card::{joker::{Joker, JokerType}, state::{CardData, CardState}}, gfx::Render, message::{InputHandler, MessageHandler}};
+use crate::{gfx::Render, message::{InputHandler, MessageHandler}};
+use crate::card::{animations::idle1, joker::{Joker, JokerType}, state::{CardData, CardState}};
 
 pub struct Jokers {
     size: usize,
-    jokers: heapless::Vec<CardState, 10>,
+    pub jokers: heapless::Vec<CardState, 10>,
 }
 
 impl Jokers {
@@ -25,7 +24,7 @@ impl Default for Jokers {
             0x100,
             CardData::Joker(Joker::new(JokerType::Jimbo)),
             [80, 44],
-            None,
+            Some(idle1()),
         )).unwrap();
 
         Self { size: 5, jokers }

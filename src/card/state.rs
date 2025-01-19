@@ -90,6 +90,10 @@ impl CardState {
     pub fn set_id(&mut self, id: usize) {
         self.id = id;
     }
+
+    pub fn card(&self) -> &CardData {
+        &self.card
+    }
 }
 
 impl CardState {
@@ -98,9 +102,9 @@ impl CardState {
     }
     pub fn update(&mut self) {
         // default card animation
-        if self.animation.is_none() {
-            self.set_animation(idle1());
-        }
+        // if self.animation.is_none() {
+        //     self.set_animation(idle1());
+        // }
 
         // replace animation when it ends
         let mut next: Option<AnimationState> = None;
@@ -122,8 +126,9 @@ impl InputHandler for CardState {
         if self.is_hovered(m) {
             if m.buttons.left && !mouse.prev().buttons.left {
                 tx.write(Message::CardClicked(self.id)).ok();
+            } else {
+                tx.write(Message::CardHovered(self.id)).ok();
             }
-            tx.write(Message::CardHovered(self.id)).ok();
         }
     }
 }

@@ -5,8 +5,9 @@
 #![feature(debug_closure_helpers)]
 
 #[panic_handler]
-fn panic_handler(_: &PanicInfo) -> ! {
-    unreachable()
+fn panic_handler(info: &PanicInfo) -> ! {
+    tracef!("Panic: {:?}", info);
+    unreachable!()
 }
 
 mod button;
@@ -18,7 +19,7 @@ mod scene;
 mod message;
 mod linalg;
 
-use core::{arch::wasm32::unreachable, mem::MaybeUninit, panic::PanicInfo};
+use core::{mem::MaybeUninit, panic::PanicInfo};
 use card::state::CardState;
 use message::{Message, MessageBuffer, MessageHandler, Reader};
 use scene::{Demo, Menu, Scene, ScenePtr, DEMO};

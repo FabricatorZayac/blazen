@@ -1,6 +1,9 @@
-use crate::{animator::{animation_state::AnimationState, transform::{Rotate, Translate}}, card::{animations::random_idle, state::CardData}, util::Duration, CardState};
+use crate::{card::{animations::random_idle, state::CardData, Rank}, util::Duration, CardState};
+use crate::animator::{animation_state::AnimationState, transform::{Rotate, Translate}};
+use enumflags2::BitFlags;
 use jokers::Jokers;
 use rand::{rngs::SmallRng, RngCore as _, SeedableRng};
+use strum::{EnumIter, IntoEnumIterator};
 use wasm4::{draw::DrawIndex, format::format_no_std, tracef};
 
 use crate::{
@@ -26,10 +29,99 @@ impl ScenePtr for *mut Demo {
     }
 }
 
+// NOTE: Should replace with a bitflag for "Contains" type jokers
+#[repr(u16)]
+#[enumflags2::bitflags]
+#[derive(EnumIter, Copy, Clone)]
+enum PokerHand {
+    HighCard,
+    Pair,
+    TwoPair,
+    Three,
+    Straight,
+    Flush,
+    FullHouse,
+    Four,
+    // StraightFlush,
+
+    Five,
+    // FlushHouse,
+    // FlushFive,
+}
+impl PokerHand {
+    fn min_cards(&self) -> usize {
+        match self {
+            PokerHand::HighCard => 1,
+            PokerHand::Pair => 2,
+            PokerHand::Three => 3,
+            PokerHand::TwoPair | PokerHand::Four => 4,
+            PokerHand::Straight
+            | PokerHand::Flush
+            | PokerHand::FullHouse
+            // | PokerHand::StraightFlush
+            | PokerHand::Five
+            // | PokerHand::FlushHouse
+            // | PokerHand::FlushFive
+            => 5,
+        }
+    }
+}
+struct Score {
+    points: f32,
+    mult: f32,
+}
+impl From<(f32, f32)> for Score {
+    fn from(value: (f32, f32)) -> Self {
+        Self { points: value.0, mult: value.1 }
+    }
+}
+impl From<BitFlags<PokerHand>> for Score {
+    fn from(value: BitFlags<PokerHand>) -> Self {
+        if value.contains(PokerHand::Flush) {
+            if value.contains(PokerHand::Straight) {
+                // Straight Flush
+                return (100.0, 8.0).into();
+            }
+            if value.contains(PokerHand::FullHouse) {
+                // Flush House
+                return (140.0, 14.0).into();
+            }
+            if value.contains(PokerHand::Five) {
+                // Flush Five
+                return (160.0, 16.0).into();
+            }
+        }
+        for hand in PokerHand::iter().rev() {
+            if value.contains(hand) {
+                return hand.into();
+            }
+        }
+        unreachable!()
+    }
+}
+impl From<PokerHand> for Score {
+    fn from(value: PokerHand) -> Self {
+        match value {
+            PokerHand::HighCard => (5.0, 1.0),
+            PokerHand::Pair => (10.0, 2.0),
+            PokerHand::TwoPair => (20.0, 2.0),
+            PokerHand::Three => (30.0, 3.0),
+            PokerHand::Straight => (30.0, 4.0),
+            PokerHand::Flush => (35.0, 4.0),
+            PokerHand::FullHouse => (40.0, 4.0),
+            PokerHand::Four => (60.0, 7.0),
+            // PokerHand::StraightFlush => (100.0, 8.0),
+            PokerHand::Five => (120.0, 12.0),
+            // PokerHand::FlushHouse => (140.0, 14.0),
+            // PokerHand::FlushFive => (160.0, 16.0),
+        }.into()
+    }
+}
 enum DemoState {
     Init,
     Idle,
-    HandInProgress,
+    InitPlay,
+    Play(Score),
     HandEnd,
 }
 pub struct Demo {
@@ -98,7 +190,7 @@ impl Demo {
 }
 impl Scene for Demo {
     fn update(&mut self) {
-        match self.state {
+        match &mut self.state {
             DemoState::Init => {
                 tracef!("Shuffling deck");
                 self.rng = SmallRng::from_seed(Entropy::get());
@@ -108,17 +200,26 @@ impl Scene for Demo {
                 self.rem_discards = self.max_discards;
                 self.rem_hands = self.max_hands;
             },
-            DemoState::Idle => { },
-            DemoState::HandInProgress => { }, 
+            DemoState::Idle => {
+                // Selection hold
+                self.hand.selected.iter().for_each(|i| {
+                    self.hand.cards[*i].set_animation(AnimationState::new(
+                        &[Translate::new([0.0, -10.0], [0.0, 0.0]).into()],
+                        Duration::from_secs(0.1),
+                        None,
+                    ));
+                });
+            },
+            DemoState::InitPlay => { 
+                self.state = DemoState::Play(self.hand.match_poker().into());
+                tracef!("Initialized Play");
+            },
+            DemoState::Play(score) => {
+                // for i in self.hand.selected.iter() {
+                //     let CardData::Playing(card) = self.hand.cards[*i].card() else { unreachable!() };
+                // }
+            }, 
             DemoState::HandEnd => { },
-        }
-        // Selection hold
-        for i in self.hand.selected.iter() {
-            self.hand.cards[*i].set_animation(AnimationState::new(
-                &[Translate::new([0.0, -10.0], [0.0, 0.0]).into()],
-                Duration::from_secs(0.1),
-                None,
-            ));
         }
         self.hand.cards
             .iter_mut()
@@ -129,7 +230,7 @@ impl Scene for Demo {
 }
 impl InputHandler for Demo {
     fn handle_input(&self, mouse: &MouseCompound, tx: &mut Writer) {
-        if let DemoState::HandInProgress = self.state { return };
+        if let DemoState::Play(_) = self.state { return };
 
         self.hand.handle_input(mouse, tx);
         self.jokers.handle_input(mouse, tx);
@@ -146,10 +247,8 @@ impl MessageHandler for Demo {
         if let DemoState::Idle = self.state {
             match rx.read() {
                 Some(Message::PlayHand) => {
-                    self.state = DemoState::HandInProgress;
+                    self.state = DemoState::InitPlay;
                     self.rem_hands -= 1;
-
-                    self.hand.selected = heapless::Vec::new();
                 },
                 Some(Message::DiscardHand) if self.rem_discards > 0 && self.hand.selected.len() > 0 => {
                     self.rem_discards -= 1;
@@ -214,7 +313,7 @@ impl MessageHandler for HandState {
             .for_each(|card| card.handle_message(rx));
 
         match rx.read() {
-            Some(Message::CardClicked(hand_idx)) if hand_idx < 100 => {
+            Some(Message::CardClicked(hand_idx)) if hand_idx < 0xFF => {
                 if let Some(pos) = self.selected.iter().position(|&e| e == hand_idx) {
                     self.selected.remove(pos);
                 } else {
@@ -297,6 +396,76 @@ impl HandState {
                 None => break,
             }
         }
+        // self.cards.sort_unstable_by(|left, right| {
+        //     let (CardData::Playing(left), CardData::Playing(right)) = (left.card(), right.card()) else { unreachable!() };
+        //     left.cmp(right)
+        // });
+    }
+    fn match_poker(&self) -> BitFlags<PokerHand> {
+        let mut played_cards = self.selected
+            .iter()
+            .map(|idx| {
+                let CardData::Playing(card) = self.cards[*idx].card() else {unreachable!()};
+                card
+            })
+            .collect::<heapless::Vec<_, 5>>();
+        played_cards.sort_unstable_by(|left, right| left.rank().cmp(&right.rank()));
+        tracef!("played: {:?}", played_cards);
+
+        // NOTE: This is really shit code, I should rewrite it when my mind is not a haze
+        let mut current_rank: Rank = played_cards[0].rank();
+        let mut sets = [0; 2];
+        let mut idx = 0;
+        for card in &played_cards {
+            if card.rank() == current_rank {
+                sets[idx] += 1;
+            } else if idx != 1 && sets[idx] >= 2 {
+                idx = 1;
+                sets[idx] += 1;
+            }
+            current_rank = card.rank();
+        }
+        let sets = sets.iter().filter(|i| **i >= 2).collect::<heapless::Vec<_, 2>>();
+        tracef!("Sets: {:?}", sets);
+
+        let mut matched: BitFlags<PokerHand> = PokerHand::HighCard.into();
+        matched |= match sets.as_slice() {
+            [2] => PokerHand::Pair,
+            [3] => PokerHand::Three,
+            [4] => PokerHand::Four,
+            [5] => PokerHand::Five,
+            [2, 2] => PokerHand::TwoPair,
+            [3, 2] => PokerHand::FullHouse,
+            [] => PokerHand::HighCard,
+            _ => unreachable!(),
+        };
+
+        if played_cards.len() == 5 {
+            // Flush check
+            let mut flush = true;
+            for i in &played_cards {
+                if i.suit() != played_cards[0].suit() {
+                    flush = false;
+                }
+            }
+            if flush {
+                matched |= PokerHand::Flush;
+            }
+
+            // Straight check
+            let mut straight = true;
+            for (i, card) in played_cards[1..].iter().enumerate() {
+                if card.rank() as u8 != played_cards[i-1].rank() as u8 - 1 {
+                    // TODO: Ace, 2... straight detect
+                    straight = false;
+                }
+            }
+            if straight {
+                matched |= PokerHand::Straight;
+            }
+        }
+
+        matched
     }
 }
 impl Default for HandState {

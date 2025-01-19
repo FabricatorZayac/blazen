@@ -2,7 +2,7 @@ use core::mem::MaybeUninit;
 
 use crate::{
     button::Button,
-    card::{state::{CardData, CardState}, Card, Rank, Suit},
+    card::{animations::idle1, state::{CardData, CardState}, Card, Rank, Suit},
     gfx::Render,
     message::{InputHandler, Message, MessageHandler, Reader, Writer},
     MouseCompound,
@@ -27,7 +27,7 @@ impl Menu {
                 0,
                 CardData::Playing(Card::new(Suit::Spade, Rank::Ace)),
                 [80, 60],
-                None,
+                Some(idle1()),
             ),
             start: Button::new(
                 [30, 100],

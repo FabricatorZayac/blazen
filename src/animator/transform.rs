@@ -82,7 +82,8 @@ impl Transform for Shear {
 
 impl Transform for [Transformation] {
     fn apply(&self, progress: f32) -> Mat3 {
-        self.iter().fold(Mat3::identity(), |acc, transform| acc.mul(transform.apply(progress)))
+        self.iter()
+            .fold(Mat3::identity(), |acc, transform| acc * transform.apply(progress))
     }
 }
 
@@ -101,9 +102,7 @@ impl Transform for Transformation {
 fn sin(x: f32) -> f32 {
     const B: f32 = 4.0 / PI;
     const C: f32 = -4.0 / (PI * PI);
-    let y = B * x + C * x * x.abs();
-
-    y
+    B * x + C * x * x.abs()
 }
 
 fn cos(x: f32) -> f32 {

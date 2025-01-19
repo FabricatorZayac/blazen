@@ -46,3 +46,19 @@ pub fn idle4() -> AnimationState {
         Translate::new([-1.0, -1.0], [-1.0, 1.0]).into(),
     ], Duration::from_secs(1.0), Some(idle1))
 }
+
+pub fn proc1() -> AnimationState {
+    AnimationState::new(&[
+        Rotate::new(0.0, 10.0).into(),
+    ], Duration::from_secs(0.2), Some(proc2))
+}
+pub fn proc2() -> AnimationState {
+    AnimationState::new(&[
+        Rotate::new(10.0, -10.0).into(),
+    ], Duration::from_secs(0.2), Some(proc3))
+}
+pub fn proc3() -> AnimationState {
+    AnimationState::new(&[
+        Rotate::new(-10.0, 0.0).into(),
+    ], Duration::from_secs(0.2), None)
+}
